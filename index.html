@@ -177,6 +177,15 @@
             background: #f9fafb;
         }
         
+        .debug-btn {
+            background: #f3f4f6;
+            color: #4b5563;
+            border: 1px dashed #9ca3af;
+            font-size: 12px;
+            padding: 8px;
+            margin-top: 10px;
+        }
+        
         .toast {
             position: fixed;
             bottom: 20px;
@@ -198,6 +207,7 @@
         .toast.success { background: #10b981; }
         .toast.error { background: #ef4444; }
         .toast.info { background: #3b82f6; }
+        .toast.warning { background: #f59e0b; }
         
         @keyframes slideUp {
             from {
@@ -292,7 +302,7 @@
                 <span>Pastikan pencahayaan cukup</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-bolt"></i>
+                <i class="fas fa-database"></i>
                 <span>Data akan otomatis tersimpan di server</span>
             </div>
         </div>
@@ -305,8 +315,12 @@
             
             <div id="studentDetail" class="student-detail">
                 <div class="student-detail-item">
-                    <span class="label">NIS</span>
-                    <span class="value" id="detailNis">-</span>
+                    <span class="label">NIS (QR)</span>
+                    <span class="value" id="detailNisQR">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">NIS (DB)</span>
+                    <span class="value" id="detailNisDB">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Nama</span>
@@ -340,7 +354,6 @@
                 <span class="text-xs text-gray-500" id="scanCount">0 hari ini</span>
             </div>
             <div id="recentList">
-                <!-- Akan diisi JavaScript -->
                 <div class="text-center text-gray-400 text-sm py-4">
                     Belum ada scan
                 </div>
@@ -355,6 +368,17 @@
         <button onclick="stopScanner()" id="stopBtn" class="btn btn-secondary" style="display: none;">
             <i class="fas fa-stop mr-2"></i>Stop Kamera
         </button>
+        
+        <!-- Debug Button (untuk testing, bisa dihapus) -->
+        <button onclick="toggleDebug()" class="btn debug-btn" id="debugBtn">
+            <i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa
+        </button>
+        
+        <!-- Debug Panel -->
+        <div id="debugPanel" style="display: none; margin-top: 16px; background: #f3f4f6; padding: 12px; border-radius: 12px; font-size: 12px; max-height: 200px; overflow-y: auto;">
+            <h4 class="font-bold mb-2">📋 Data Siswa di Database:</h4>
+            <div id="debugContent"></div>
+        </div>
     </div>
     
     <!-- Toast Container -->
@@ -386,19 +410,30 @@
         // Load data siswa dari JSONBin
         async function loadStudents() {
             try {
+                showToast('Memuat data siswa...', 'info');
+                
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.STUDENTS}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }
+                    headers: { 
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
                 });
                 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 const data = await response.json();
                 students = Array.isArray(data) ? data : [];
+                
                 console.log('📚 Loaded students:', students.length);
+                console.log('📋 Contoh data:', students[0]);
+                
+                // Update debug panel
+                updateDebugPanel();
+                
                 return students;
             } catch (error) {
                 console.error('❌ Gagal load siswa:', error);
-                showToast('Gagal memuat data siswa', 'error');
+                showToast('Gagal memuat data siswa: ' + error.message, 'error');
                 return [];
             }
         }
@@ -407,7 +442,10 @@
         async function loadAttendance() {
             try {
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY }
+                    headers: { 
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
                 });
                 
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
@@ -429,6 +467,8 @@
         // Simpan data absensi ke JSONBin
         async function saveAttendance(newRecord) {
             try {
+                showToast('Menyimpan ke server...', 'info');
+                
                 // Tambahkan ke array lokal
                 attendanceRecords.push(newRecord);
                 
@@ -437,7 +477,8 @@
                     method: 'PUT',
                     headers: {
                         'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'Content-Type': 'application/json'
+                        'Content-Type': 'application/json',
+                        'X-Bin-Meta': 'false'
                     },
                     body: JSON.stringify(attendanceRecords)
                 });
@@ -452,14 +493,71 @@
                 return true;
             } catch (error) {
                 console.error('❌ Gagal simpan absensi:', error);
-                showToast('Gagal menyimpan ke server', 'error');
+                showToast('Gagal menyimpan ke server: ' + error.message, 'error');
+                
+                // Kembalikan array ke keadaan semula (rollback)
+                attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
+                
                 return false;
             }
         }
 
-        // Cari siswa berdasarkan NIS (dari QR code)
-        function findStudentByNIS(nis) {
-            return students.find(s => s.nis === nis);
+        // 🔍 **PERBAIKAN UTAMA: Fungsi pencarian siswa dengan FLEKSIBEL**
+        function findStudentByNIS(nisFromQR) {
+            if (!students || students.length === 0) {
+                console.log('⚠️ Data siswa kosong');
+                return null;
+            }
+            
+            // Bersihkan NIS dari QR (hapus spasi, karakter aneh)
+            const cleanNis = String(nisFromQR).trim();
+            
+            console.log('🔍 Mencari NIS:', cleanNis);
+            console.log('📊 Total siswa:', students.length);
+            
+            // Strategi 1: Exact match (langsung)
+            let student = students.find(s => String(s.nis).trim() === cleanNis);
+            if (student) {
+                console.log('✅ Ditemukan (exact match):', student);
+                return student;
+            }
+            
+            // Strategi 2: Coba hapus leading zeros (misal: 001234 vs 1234)
+            const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
+            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
+            if (student) {
+                console.log('✅ Ditemukan (tanpa leading zeros):', student);
+                return student;
+            }
+            
+            // Strategi 3: Cari sebagian (misal: QR 16 digit, DB hanya 7 digit terakhir)
+            // Ambil 7-10 digit terakhir (sesuaikan dengan format NIS di DB)
+            const last7Digits = cleanNis.slice(-7);
+            student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
+            if (student) {
+                console.log('✅ Ditemukan (last 7 digits):', student);
+                return student;
+            }
+            
+            const last10Digits = cleanNis.slice(-10);
+            student = students.find(s => String(s.nis).endsWith(last10Digits) || String(s.nis).includes(last10Digits));
+            if (student) {
+                console.log('✅ Ditemukan (last 10 digits):', student);
+                return student;
+            }
+            
+            // Strategi 4: Cari dengan regex (angka saja)
+            const numbersOnly = cleanNis.replace(/\D/g, '');
+            student = students.find(s => String(s.nis).replace(/\D/g, '') === numbersOnly);
+            if (student) {
+                console.log('✅ Ditemukan (numbers only):', student);
+                return student;
+            }
+            
+            // Strategi 5: Jika semua gagal, tampilkan debug
+            console.log('❌ Tidak ditemukan. Contoh NIS di DB:', students.slice(0, 3).map(s => s.nis));
+            
+            return null;
         }
 
         // Generate ID unik (sama dengan di aplikasi admin)
@@ -467,13 +565,12 @@
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
-        // Format tanggal Indonesia
+        // Format tanggal Indonesia (YYYY-MM-DD)
         function formatDate(date) {
-            return date.toLocaleDateString('id-ID', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit'
-            }).split('/').reverse().join('-');
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
         }
 
         // Format waktu
@@ -491,7 +588,7 @@
             todayScans = attendanceRecords
                 .filter(r => r.tanggal === today && r.metode === 'qr')
                 .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 5); // Ambil 5 terbaru
+                .slice(0, 5);
             
             const listEl = document.getElementById('recentList');
             const countEl = document.getElementById('scanCount');
@@ -525,28 +622,90 @@
             }).join('');
         }
 
+        // Update debug panel
+        function updateDebugPanel() {
+            const debugContent = document.getElementById('debugContent');
+            if (!debugContent) return;
+            
+            if (students.length === 0) {
+                debugContent.innerHTML = '<p class="text-gray-500">Tidak ada data siswa</p>';
+                return;
+            }
+            
+            let html = '<table style="width:100%; border-collapse:collapse;">';
+            html += '<tr><th style="text-align:left; padding:4px;">NIS DB</th><th style="text-align:left; padding:4px;">Nama</th></tr>';
+            
+            students.slice(0, 10).forEach(s => {
+                html += `<tr>
+                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nis}</td>
+                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nama}</td>
+                </tr>`;
+            });
+            
+            if (students.length > 10) {
+                html += `<tr><td colspan="2" style="padding:4px; color:gray;">... dan ${students.length - 10} lainnya</td></tr>`;
+            }
+            
+            html += '</table>';
+            debugContent.innerHTML = html;
+        }
+
+        // Toggle debug panel
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            const btn = document.getElementById('debugBtn');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-times mr-2"></i>Tutup Debug';
+                updateDebugPanel();
+            } else {
+                panel.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa';
+            }
+        }
+
         // ==================== FUNGSI SCANNER ====================
 
         // Handle hasil scan QR
         async function onScanSuccess(decodedText) {
-            if (isLoading) return; // Cegah double scan
+            if (isLoading) {
+                showToast('Sedang memproses scan sebelumnya...', 'warning');
+                return;
+            }
             
             isLoading = true;
             stopScanner(); // Stop scanner sementara
             
             try {
-                // decodedText = NIS siswa
-                const nis = decodedText.trim();
-                console.log('🔍 QR terdeteksi:', nis);
+                // decodedText = NIS siswa dari QR
+                const nisFromQR = decodedText.trim();
+                console.log('🔍 QR terdeteksi:', nisFromQR);
                 
-                // Cari siswa di database
-                const student = findStudentByNIS(nis);
+                showToast('Memproses scan...', 'info');
+                
+                // Cari siswa di database dengan berbagai strategi
+                const student = findStudentByNIS(nisFromQR);
                 
                 if (!student) {
                     // Siswa tidak ditemukan
-                    showStatus('error', '❌ Siswa Tidak Ditemukan', 
-                        `NIS ${nis} tidak terdaftar di sistem.`, null);
+                    showStatus(
+                        'error', 
+                        '❌ Siswa Tidak Ditemukan', 
+                        `NIS ${nisFromQR} tidak terdaftar di sistem.`, 
+                        null,
+                        nisFromQR
+                    );
                     showToast('Siswa tidak ditemukan!', 'error');
+                    
+                    // Tampilkan debug otomatis
+                    setTimeout(() => {
+                        if (document.getElementById('debugPanel').style.display === 'none') {
+                            toggleDebug();
+                        }
+                    }, 1000);
+                    
+                    isLoading = false;
                     return;
                 }
                 
@@ -558,9 +717,15 @@
                 
                 if (alreadyAbsent) {
                     // Sudah absen hari ini
-                    showStatus('warning', '⚠️ Sudah Absen Hari Ini', 
-                        `${student.nama} sudah melakukan absensi hari ini.`, student);
-                    showToast('Sudah absen hari ini', 'info');
+                    showStatus(
+                        'warning', 
+                        '⚠️ Sudah Absen Hari Ini', 
+                        `${student.nama} sudah melakukan absensi hari ini.`, 
+                        student,
+                        nisFromQR
+                    );
+                    showToast('Sudah absen hari ini', 'warning');
+                    isLoading = false;
                     return;
                 }
                 
@@ -574,9 +739,9 @@
                     student_nama: student.nama,
                     student_kelas: student.kelas,
                     student_jurusan: student.jurusan,
-                    status: 'hadir', // Scan QR otomatis = HADIR
+                    status: 'hadir',
                     metode: 'qr',
-                    keterangan: 'Absen via QR Code',
+                    keterangan: `Absen via QR (NIS QR: ${nisFromQR})`,
                     tanggal: formatDate(now),
                     timestamp: now.getTime()
                 };
@@ -586,20 +751,30 @@
                 
                 if (saved) {
                     // Tampilkan sukses
-                    showStatus('success', '✅ Absensi Berhasil!', 
-                        `Selamat datang, ${student.nama}`, student);
+                    showStatus(
+                        'success', 
+                        '✅ Absensi Berhasil!', 
+                        `Selamat datang, ${student.nama}`, 
+                        student,
+                        nisFromQR
+                    );
                     showToast('Kehadiran tercatat!', 'success');
                     
                     // Reload data dari server (untuk memastikan sync)
                     await loadAttendance();
                 } else {
-                    showStatus('error', '❌ Gagal Menyimpan', 
-                        'Terjadi kesalahan server. Coba lagi.', student);
+                    showStatus(
+                        'error', 
+                        '❌ Gagal Menyimpan', 
+                        'Terjadi kesalahan server. Coba lagi.', 
+                        student,
+                        nisFromQR
+                    );
                 }
                 
             } catch (error) {
                 console.error('Error processing scan:', error);
-                showStatus('error', '❌ Error', 'Terjadi kesalahan sistem', null);
+                showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
                 showToast('Error: ' + error.message, 'error');
             } finally {
                 isLoading = false;
@@ -612,7 +787,7 @@
         }
 
         // Tampilkan status card setelah scan
-        function showStatus(type, title, message, student) {
+        function showStatus(type, title, message, student, nisFromQR) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -632,14 +807,17 @@
             
             // Tampilkan/sembunyikan detail siswa
             if (student) {
-                document.getElementById('detailNis').textContent = student.nis;
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = student.nis;
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
-                detailEl.style.display = 'none';
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = '-';
+                detailEl.style.display = 'block'; // Tetap tampilkan untuk debug
             }
             
             // Sembunyikan scanner container
@@ -647,6 +825,7 @@
             document.getElementById('recentScans').style.display = 'none';
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
+            document.getElementById('debugBtn').style.display = 'none';
             
             // Tampilkan card
             card.style.display = 'block';
@@ -656,6 +835,7 @@
             // Tampilkan scanner container
             document.querySelector('.scanner-container').style.display = 'block';
             document.getElementById('recentScans').style.display = 'block';
+            document.getElementById('debugBtn').style.display = 'block';
             
             // Sembunyikan status card
             document.getElementById('statusCard').style.display = 'none';
@@ -675,6 +855,7 @@
                     document.getElementById('stopBtn').style.display = 'block';
                 } catch (e) {
                     console.error('Start scanner error:', e);
+                    showToast('Gagal memulai kamera', 'error');
                 }
             }
         }
@@ -723,7 +904,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'} text-xl"></i>
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-xl"></i>
                 <span>${message}</span>
             `;
             container.appendChild(toast);
@@ -750,7 +931,7 @@
             
             // Cek izin kamera
             try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
                 startScanner();
             } catch (err) {
