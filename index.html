@@ -273,6 +273,33 @@
             background: #d1fae5;
             color: #065f46;
         }
+
+        .gps-indicator {
+            background: #1e3a8a;
+            color: white;
+            padding: 8px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        
+        .gps-indicator i {
+            font-size: 14px;
+        }
+        
+        .gps-indicator.active {
+            background: #059669;
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.8; }
+            100% { opacity: 1; }
+        }
     </style>
 </head>
 <body>
@@ -302,13 +329,15 @@
                 <span>Pastikan pencahayaan cukup</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-map-marker-alt"></i>
-                <span>Lokasi Anda akan terekam dengan akurasi tinggi</span>
-            </div>
-            <div class="info-item">
                 <i class="fas fa-satellite-dish"></i>
-                <span>Aktifkan GPS untuk lokasi yang lebih akurat</span>
+                <span>Pastikan GPS AKTIF untuk lokasi akurat</span>
             </div>
+        </div>
+        
+        <!-- GPS Status Indicator -->
+        <div id="gpsStatus" class="gps-indicator mb-4 hidden">
+            <i class="fas fa-satellite-dish"></i>
+            <span id="gpsStatusText">Mendeteksi GPS...</span>
         </div>
         
         <!-- Status Card (ditampilkan setelah scan) -->
@@ -347,6 +376,10 @@
                     <span class="value" id="detailAkurasi">-</span>
                 </div>
                 <div class="student-detail-item">
+                    <span class="label">Sumber</span>
+                    <span class="value" id="detailSumber">-</span>
+                </div>
+                <div class="student-detail-item">
                     <span class="label">Waktu</span>
                     <span class="value" id="detailWaktu">-</span>
                 </div>
@@ -381,7 +414,7 @@
             <i class="fas fa-stop mr-2"></i>Stop Kamera
         </button>
         
-        <!-- Debug Button (untuk testing, bisa dihapus) -->
+        <!-- Debug Button -->
         <button onclick="toggleDebug()" class="btn debug-btn" id="debugBtn">
             <i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa
         </button>
@@ -444,7 +477,6 @@
                 
                 console.log('📚 Loaded students:', students.length);
                 
-                // Update debug panel
                 updateDebugPanel();
                 
                 return students;
@@ -545,79 +577,182 @@
             return null;
         }
 
-        // ==================== FUNGSI GET LOKASI (DIPERBAIKI UNTUK AKURASI) ====================
-        function getCurrentLocation() {
+        // ==================== FUNGSI GET LOKASI (AKURASI MAKSIMAL) ====================
+        
+        // Fungsi untuk mengecek apakah GPS aktif (dengan mencoba mendapatkan lokasi)
+        async function checkGPSStatus() {
+            const gpsEl = document.getElementById('gpsStatus');
+            const gpsText = document.getElementById('gpsStatusText');
+            
+            if (!navigator.geolocation) {
+                gpsEl.classList.remove('hidden');
+                gpsText.innerHTML = 'Geolocation tidak didukung';
+                return false;
+            }
+            
+            gpsEl.classList.remove('hidden');
+            gpsText.innerHTML = 'Mendeteksi GPS...';
+            
+            return new Promise((resolve) => {
+                const timeout = setTimeout(() => {
+                    gpsEl.classList.add('active');
+                    gpsText.innerHTML = 'GPS tidak merespon, pastikan GPS aktif';
+                    resolve(false);
+                }, 5000);
+                
+                navigator.geolocation.getCurrentPosition(
+                    () => {
+                        clearTimeout(timeout);
+                        gpsEl.classList.add('active');
+                        gpsText.innerHTML = '✅ GPS aktif dan siap digunakan';
+                        resolve(true);
+                    },
+                    (error) => {
+                        clearTimeout(timeout);
+                        gpsEl.classList.add('active');
+                        let message = 'GPS tidak tersedia';
+                        if (error.code === error.PERMISSION_DENIED) {
+                            message = 'Izin lokasi ditolak';
+                        } else if (error.code === error.POSITION_UNAVAILABLE) {
+                            message = 'GPS tidak aktif';
+                        }
+                        gpsText.innerHTML = `❌ ${message}`;
+                        resolve(false);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 5000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Fungsi untuk mendapatkan lokasi dengan AKURASI MAKSIMAL
+        async function getCurrentLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
                     reject(new Error('Geolocation tidak didukung browser ini'));
                     return;
                 }
                 
-                showToast('Mendapatkan lokasi akurat...', 'info');
+                showToast('Mendapatkan lokasi akurat... pastikan GPS aktif', 'info');
+                
+                // Cek GPS status
+                checkGPSStatus().catch(() => {});
                 
                 // Opsi untuk akurasi maksimal
                 const options = {
-                    enableHighAccuracy: true,      // Gunakan GPS jika tersedia
-                    timeout: 15000,                 // Tunggu maksimal 15 detik
-                    maximumAge: 0                    // Selalu ambil lokasi baru, jangan pakai cache
+                    enableHighAccuracy: true,      // WAJIB: gunakan GPS
+                    timeout: 30000,                 // Tunggu hingga 30 detik untuk GPS fix
+                    maximumAge: 0                    // JANGAN pakai cache
                 };
                 
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        const location = {
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy, // Akurasi dalam meter
-                            altitude: position.coords.altitude,
-                            altitudeAccuracy: position.coords.altitudeAccuracy,
-                            heading: position.coords.heading,
-                            speed: position.coords.speed,
-                            timestamp: position.timestamp
-                        };
-                        
-                        console.log('📍 Lokasi didapatkan:', location);
-                        
-                        // Beri informasi akurasi ke user
-                        let accuracyMessage = `Lokasi dengan akurasi ${location.accuracy.toFixed(0)} meter`;
-                        if (location.accuracy < 10) {
-                            accuracyMessage = `✅ Akurasi sangat baik (${location.accuracy.toFixed(0)} m)`;
-                        } else if (location.accuracy < 30) {
-                            accuracyMessage = `✅ Akurasi baik (${location.accuracy.toFixed(0)} m)`;
-                        } else if (location.accuracy < 100) {
-                            accuracyMessage = `⚠️ Akurasi sedang (${location.accuracy.toFixed(0)} m)`;
-                        } else {
-                            accuracyMessage = `❌ Akurasi rendah (${location.accuracy.toFixed(0)} m)`;
-                        }
-                        
-                        showToast(accuracyMessage, location.accuracy < 30 ? 'success' : 'warning');
-                        
-                        resolve(location);
-                    },
-                    (error) => {
-                        console.error('❌ Gagal mendapatkan lokasi:', error);
-                        let errorMessage = 'Gagal mendapatkan lokasi';
-                        
-                        switch(error.code) {
-                            case error.PERMISSION_DENIED:
-                                errorMessage = 'Izin lokasi ditolak. Absensi tetap diproses tanpa lokasi.';
-                                break;
-                            case error.POSITION_UNAVAILABLE:
-                                errorMessage = 'Lokasi tidak tersedia. Coba aktifkan GPS.';
-                                break;
-                            case error.TIMEOUT:
-                                errorMessage = 'Timeout mengambil lokasi. Coba lagi di tempat terbuka.';
-                                break;
-                        }
-                        
-                        showToast(errorMessage, 'warning');
-                        reject(error);
-                    },
-                    options // Gunakan opsi akurasi tinggi
-                );
+                let attempts = 0;
+                const maxAttempts = 3;
+                
+                function attemptGetLocation() {
+                    attempts++;
+                    console.log(`📍 Attempt ${attempts} to get location...`);
+                    
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            // Berhasil dapat lokasi
+                            const location = {
+                                lat: position.coords.latitude,
+                                lng: position.coords.longitude,
+                                accuracy: position.coords.accuracy, // Akurasi dalam meter
+                                altitude: position.coords.altitude,
+                                altitudeAccuracy: position.coords.altitudeAccuracy,
+                                heading: position.coords.heading,
+                                speed: position.coords.speed,
+                                timestamp: position.timestamp,
+                                source: position.coords.accuracy < 20 ? 'GPS' : 'Jaringan' // Tebak sumber
+                            };
+                            
+                            console.log('📍 Lokasi didapatkan:', location);
+                            
+                            // Evaluasi akurasi
+                            let accuracyMessage = '';
+                            let isGoodEnough = false;
+                            
+                            if (location.accuracy < 10) {
+                                accuracyMessage = `✅ Akurasi SANGAT BAIK (${location.accuracy.toFixed(0)} m) - Menggunakan GPS`;
+                                isGoodEnough = true;
+                            } else if (location.accuracy < 30) {
+                                accuracyMessage = `✅ Akurasi BAIK (${location.accuracy.toFixed(0)} m)`;
+                                isGoodEnough = true;
+                            } else if (location.accuracy < 100) {
+                                accuracyMessage = `⚠️ Akurasi SEDANG (${location.accuracy.toFixed(0)} m) - Mungkin dari WiFi`;
+                                // Masih bisa diterima
+                                isGoodEnough = true;
+                            } else {
+                                accuracyMessage = `❌ Akurasi RENDAH (${location.accuracy.toFixed(0)} m) - Coba lagi di luar ruangan`;
+                                // Jika masih ada attempts, coba lagi
+                                if (attempts < maxAttempts) {
+                                    showToast(`Akurasi rendah, mencoba lagi... (${attempts}/${maxAttempts})`, 'warning');
+                                    setTimeout(() => attemptGetLocation(), 2000);
+                                    return;
+                                }
+                            }
+                            
+                            showToast(accuracyMessage, location.accuracy < 30 ? 'success' : 'warning');
+                            
+                            // Update GPS status
+                            const gpsText = document.getElementById('gpsStatusText');
+                            if (gpsText) {
+                                gpsText.innerHTML = `📍 Lokasi: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)} (akurasi ${location.accuracy.toFixed(0)}m)`;
+                            }
+                            
+                            resolve(location);
+                        },
+                        (error) => {
+                            console.error('❌ Gagal mendapatkan lokasi:', error);
+                            
+                            let errorMessage = 'Gagal mendapatkan lokasi';
+                            let shouldRetry = false;
+                            
+                            switch(error.code) {
+                                case error.PERMISSION_DENIED:
+                                    errorMessage = 'Izin lokasi ditolak. Absensi tetap diproses tanpa lokasi.';
+                                    shouldRetry = false;
+                                    break;
+                                case error.POSITION_UNAVAILABLE:
+                                    errorMessage = 'Lokasi tidak tersedia. Pastikan GPS AKTIF.';
+                                    shouldRetry = true;
+                                    break;
+                                case error.TIMEOUT:
+                                    errorMessage = 'Timeout mengambil lokasi. Pastikan di luar ruangan.';
+                                    shouldRetry = true;
+                                    break;
+                            }
+                            
+                            // Jika masih ada attempts dan error bisa diulang
+                            if (shouldRetry && attempts < maxAttempts) {
+                                showToast(`Mencoba ulang... (${attempts}/${maxAttempts})`, 'warning');
+                                setTimeout(() => attemptGetLocation(), 3000);
+                            } else {
+                                showToast(errorMessage, 'warning');
+                                
+                                // Update GPS status
+                                const gpsText = document.getElementById('gpsStatusText');
+                                if (gpsText) {
+                                    gpsText.innerHTML = `❌ ${errorMessage}`;
+                                }
+                                
+                                reject(error);
+                            }
+                        },
+                        options
+                    );
+                }
+                
+                // Mulai attempt pertama
+                attemptGetLocation();
             });
         }
 
-        // Hitung jarak antara dua koordinat (Haversine formula)
+        // Hitung jarak antara dua koordinat
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // Radius bumi dalam km
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -789,6 +924,7 @@
                 // 🔥 AMBIL LOKASI DENGAN AKURASI TINGGI
                 let location = null;
                 let accuracyText = '';
+                let sourceText = '';
                 
                 try {
                     location = await getCurrentLocation();
@@ -796,18 +932,21 @@
                     
                     // Format akurasi
                     if (location.accuracy < 10) {
-                        accuracyText = `Akurasi sangat baik (${location.accuracy.toFixed(0)} m)`;
+                        accuracyText = `SANGAT AKURAT (${location.accuracy.toFixed(0)} m)`;
                     } else if (location.accuracy < 30) {
-                        accuracyText = `Akurasi baik (${location.accuracy.toFixed(0)} m)`;
+                        accuracyText = `AKURAT (${location.accuracy.toFixed(0)} m)`;
                     } else if (location.accuracy < 100) {
-                        accuracyText = `Akurasi sedang (${location.accuracy.toFixed(0)} m)`;
+                        accuracyText = `SEDANG (${location.accuracy.toFixed(0)} m)`;
                     } else {
-                        accuracyText = `Akurasi rendah (${location.accuracy.toFixed(0)} m)`;
+                        accuracyText = `RENDAH (${location.accuracy.toFixed(0)} m)`;
                     }
+                    
+                    sourceText = location.source || (location.accuracy < 20 ? 'GPS' : 'Jaringan');
                     
                 } catch (locError) {
                     console.warn('⚠️ Lokasi tidak tersedia:', locError);
                     accuracyText = 'Lokasi tidak tersedia';
+                    sourceText = '-';
                 }
                 
                 const now = new Date();
@@ -846,7 +985,8 @@
                         student,
                         nisFromQR,
                         locationText,
-                        accuracyText
+                        accuracyText,
+                        sourceText
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
@@ -874,7 +1014,7 @@
             // Abaikan error scanner
         }
 
-        function showStatus(type, title, message, student, nisFromQR, locationText, accuracyText) {
+        function showStatus(type, title, message, student, nisFromQR, locationText, accuracyText, sourceText) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -898,6 +1038,7 @@
                 document.getElementById('detailJurusan').textContent = student.jurusan;
                 document.getElementById('detailLokasi').textContent = locationText || 'Tidak tersedia';
                 document.getElementById('detailAkurasi').textContent = accuracyText || '-';
+                document.getElementById('detailSumber').textContent = sourceText || '-';
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
@@ -905,6 +1046,7 @@
                 document.getElementById('detailNisDB').textContent = '-';
                 document.getElementById('detailLokasi').textContent = '-';
                 document.getElementById('detailAkurasi').textContent = '-';
+                document.getElementById('detailSumber').textContent = '-';
                 detailEl.style.display = 'block';
             }
             
@@ -1000,6 +1142,9 @@
             
             await loadStudents();
             await loadAttendance();
+            
+            // Cek GPS status
+            checkGPSStatus();
             
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
