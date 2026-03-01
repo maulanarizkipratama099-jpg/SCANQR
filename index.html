@@ -177,13 +177,15 @@
             background: #f9fafb;
         }
         
-        .btn-danger {
-            background: #ef4444;
-            color: white;
+        .btn-outline {
+            background: transparent;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
         }
         
-        .btn-danger:hover {
-            background: #dc2626;
+        .btn-outline:hover {
+            background: #4f46e5;
+            color: white;
         }
         
         .debug-btn {
@@ -283,56 +285,39 @@
             color: #065f46;
         }
 
-        .gps-indicator {
-            background: #1e3a8a;
-            color: white;
-            padding: 12px;
-            border-radius: 16px;
-            font-size: 14px;
-            margin-bottom: 16px;
-            text-align: center;
-            border: 2px solid #3b82f6;
+        .badge-warning {
+            background: #fef3c7;
+            color: #b45309;
         }
-        
-        .gps-indicator.active {
-            background: #059669;
-            border-color: #10b981;
-            animation: pulse 2s infinite;
+
+        .location-picker {
+            background: #f9fafb;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            border: 2px solid #e5e7eb;
         }
-        
-        .gps-indicator.error {
-            background: #b91c1c;
-            border-color: #ef4444;
+
+        .accuracy-badge {
+            font-size: 11px;
+            padding: 4px 8px;
+            border-radius: 20px;
+            display: inline-block;
         }
-        
-        @keyframes pulse {
-            0% { opacity: 1; }
-            50% { opacity: 0.8; }
-            100% { opacity: 1; }
+
+        .accuracy-good {
+            background: #d1fae5;
+            color: #065f46;
         }
-        
-        .accuracy-meter {
-            width: 100%;
-            height: 10px;
-            background: #374151;
-            border-radius: 5px;
-            margin: 10px 0;
-            overflow: hidden;
+
+        .accuracy-medium {
+            background: #fef3c7;
+            color: #b45309;
         }
-        
-        .accuracy-bar {
-            height: 100%;
-            background: linear-gradient(90deg, #ef4444, #f59e0b, #10b981);
-            transition: width 0.3s ease;
-            border-radius: 5px;
-        }
-        
-        .countdown-timer {
-            font-size: 48px;
-            font-weight: bold;
-            color: #3b82f6;
-            text-align: center;
-            margin: 20px 0;
+
+        .accuracy-poor {
+            background: #fee2e2;
+            color: #dc2626;
         }
     </style>
 </head>
@@ -363,28 +348,13 @@
                 <span>Pastikan pencahayaan cukup</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-satellite-dish"></i>
-                <span>WAJIB: GPS AKTIF dan di LUAR RUANGAN</span>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Lokasi Anda akan terekam saat scan</span>
             </div>
-        </div>
-        
-        <!-- GPS Status Card (selalu muncul) -->
-        <div id="gpsCard" class="gps-indicator error">
-            <div class="flex items-center justify-between mb-2">
-                <span class="font-bold"><i class="fas fa-satellite-dish mr-2"></i>STATUS GPS</span>
-                <span id="gpsStatusBadge" class="bg-black bg-opacity-30 px-3 py-1 rounded-full text-xs">MENUNGGU</span>
+            <div class="info-item">
+                <i class="fas fa-crosshairs"></i>
+                <span>Aktifkan GPS untuk akurasi maksimal</span>
             </div>
-            <div id="gpsMessage" class="text-sm mb-2">
-                Mengaktifkan GPS...
-            </div>
-            <div class="accuracy-meter">
-                <div id="accuracyBar" class="accuracy-bar" style="width: 0%"></div>
-            </div>
-            <div class="flex justify-between text-xs">
-                <span>Akurasi: <span id="accuracyValue">-</span></span>
-                <span>Sumber: <span id="sourceValue">-</span></span>
-            </div>
-            <div id="gpsCountdown" class="countdown-timer hidden">60</div>
         </div>
         
         <!-- Status Card (ditampilkan setelah scan) -->
@@ -423,10 +393,6 @@
                     <span class="value" id="detailAkurasi">-</span>
                 </div>
                 <div class="student-detail-item">
-                    <span class="label">Sumber</span>
-                    <span class="value" id="detailSumber">-</span>
-                </div>
-                <div class="student-detail-item">
                     <span class="label">Waktu</span>
                     <span class="value" id="detailWaktu">-</span>
                 </div>
@@ -461,9 +427,9 @@
             <i class="fas fa-stop mr-2"></i>Stop Kamera
         </button>
         
-        <!-- Force Continue Button (muncul jika GPS timeout) -->
-        <button onclick="forceContinue()" id="forceContinueBtn" class="btn btn-danger hidden">
-            <i class="fas fa-exclamation-triangle mr-2"></i>LANJUTKAN TANPA GPS AKURAT
+        <!-- Tombol Uji Lokasi -->
+        <button onclick="testLocation()" class="btn btn-outline mt-2">
+            <i class="fas fa-crosshairs mr-2"></i>Uji Akurasi Lokasi
         </button>
         
         <!-- Debug Button -->
@@ -491,9 +457,6 @@
             name: "MA Ibnu Husain"
         };
 
-        // TARGET AKURASI: WAJIB di bawah 10 meter!
-        const TARGET_ACCURACY = 10; // meter
-        
         // KONFIGURASI JSONBIN
         const JSONBIN_CONFIG = {
             API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
@@ -511,18 +474,11 @@
         let attendanceRecords = [];
         let todayScans = [];
         let isLoading = false;
-        
-        // GPS State
-        let watchId = null;
-        let bestLocation = null;
-        let gpsTimeout = null;
-        let gpsCountdown = 60;
-        let countdownInterval = null;
-        let isWaitingForGPS = false;
-        let forceContinueFlag = false;
+        let lastKnownLocation = null;
 
         // ==================== FUNGSI DATABASE ====================
         
+        // Load data siswa dari JSONBin
         async function loadStudents() {
             try {
                 showToast('Memuat data siswa...', 'info');
@@ -541,6 +497,7 @@
                 
                 console.log('📚 Loaded students:', students.length);
                 
+                // Update debug panel
                 updateDebugPanel();
                 
                 return students;
@@ -551,6 +508,7 @@
             }
         }
 
+        // Load data absensi dari JSONBin
         async function loadAttendance() {
             try {
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}/latest`, {
@@ -566,6 +524,7 @@
                 attendanceRecords = Array.isArray(data) ? data : [];
                 console.log('📋 Loaded attendance:', attendanceRecords.length);
                 
+                // Update recent scans (hari ini)
                 updateRecentScans();
                 
                 return attendanceRecords;
@@ -575,12 +534,15 @@
             }
         }
 
+        // Simpan data absensi ke JSONBin
         async function saveAttendance(newRecord) {
             try {
                 showToast('Menyimpan ke server...', 'info');
                 
+                // Tambahkan ke array lokal
                 attendanceRecords.push(newRecord);
                 
+                // Simpan ke JSONBin
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
                     method: 'PUT',
                     headers: {
@@ -594,6 +556,8 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 console.log('✅ Absensi tersimpan:', newRecord);
+                
+                // Update tampilan recent scans
                 updateRecentScans();
                 
                 return true;
@@ -601,13 +565,14 @@
                 console.error('❌ Gagal simpan absensi:', error);
                 showToast('Gagal menyimpan ke server: ' + error.message, 'error');
                 
+                // Kembalikan array ke keadaan semula (rollback)
                 attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                 
                 return false;
             }
         }
 
-        // 🔍 Fungsi pencarian siswa
+        // Fungsi pencarian siswa
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
@@ -615,8 +580,6 @@
             }
             
             const cleanNis = String(nisFromQR).trim();
-            
-            console.log('🔍 Mencari NIS:', cleanNis);
             
             // Exact match
             let student = students.find(s => String(s.nis).trim() === cleanNis);
@@ -627,7 +590,7 @@
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) return student;
             
-            // Last 7 digits
+            // Last digits
             const last7Digits = cleanNis.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
             if (student) return student;
@@ -637,196 +600,287 @@
             student = students.find(s => String(s.nis).replace(/\D/g, '') === numbersOnly);
             if (student) return student;
             
-            console.log('❌ Tidak ditemukan');
             return null;
         }
 
-        // ==================== FUNGSI GPS SUPER AKURAT ====================
-        
-        function updateGPSUI() {
-            const gpsCard = document.getElementById('gpsCard');
-            const gpsBadge = document.getElementById('gpsStatusBadge');
-            const gpsMessage = document.getElementById('gpsMessage');
-            const accuracyBar = document.getElementById('accuracyBar');
-            const accuracyValue = document.getElementById('accuracyValue');
-            const sourceValue = document.getElementById('sourceValue');
+        // ==================== FUNGSI GET LOKASI (DIPERBAIKI) ====================
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation tidak didukung browser ini'));
+                    return;
+                }
+                
+                showToast('Mendapatkan lokasi GPS...', 'info');
+                
+                // Opsi untuk akurasi tinggi
+                const options = {
+                    enableHighAccuracy: true,      // Gunakan GPS jika tersedia
+                    timeout: 15000,                // Timeout 15 detik
+                    maximumAge: 0                   // Selalu ambil data baru
+                };
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const location = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy, // Akurasi dalam meter
+                            timestamp: position.timestamp
+                        };
+                        
+                        console.log('📍 Lokasi didapatkan:', location);
+                        
+                        // Simpan sebagai last known location
+                        lastKnownLocation = location;
+                        
+                        // Tampilkan akurasi
+                        let accuracyMsg = `Akurasi: ±${location.accuracy.toFixed(1)} meter`;
+                        if (location.accuracy < 20) {
+                            showToast(accuracyMsg + ' (Sangat Baik)', 'success');
+                        } else if (location.accuracy < 50) {
+                            showToast(accuracyMsg + ' (Cukup)', 'info');
+                        } else {
+                            showToast(accuracyMsg + ' (Rendah)', 'warning');
+                        }
+                        
+                        resolve(location);
+                    },
+                    (error) => {
+                        console.error('❌ Gagal mendapatkan lokasi:', error);
+                        let errorMessage = '';
+                        
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Izin lokasi ditolak. Aktifkan lokasi di pengaturan.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Lokasi tidak tersedia. Pastikan GPS aktif.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Timeout mengambil lokasi. Coba lagi di tempat terbuka.';
+                                break;
+                            default:
+                                errorMessage = 'Gagal mendapatkan lokasi.';
+                        }
+                        
+                        showToast(errorMessage, 'error');
+                        
+                        // Tawarkan untuk menggunakan lokasi manual
+                        askManualLocation(resolve, reject);
+                    },
+                    options
+                );
+            });
+        }
+
+        // Fungsi untuk meminta lokasi manual jika GPS gagal
+        function askManualLocation(resolve, reject) {
+            const toast = document.createElement('div');
+            toast.className = 'toast warning';
+            toast.style.zIndex = '10000';
+            toast.innerHTML = `
+                <i class="fas fa-exclamation-triangle text-xl"></i>
+                <div class="flex-1">
+                    <p class="font-bold">Gagal mendapatkan GPS</p>
+                    <p class="text-sm opacity-90">Ingin memasukkan lokasi manual?</p>
+                    <div class="flex gap-2 mt-2">
+                        <button onclick="useLastKnownLocation()" class="text-xs bg-white text-gray-800 px-3 py-1 rounded-lg">Gunakan Lokasi Terakhir</button>
+                        <button onclick="skipLocation()" class="text-xs bg-transparent border border-white text-white px-3 py-1 rounded-lg">Lanjut Tanpa Lokasi</button>
+                    </div>
+                </div>
+            `;
             
-            if (!bestLocation) {
-                gpsCard.className = 'gps-indicator error';
-                gpsBadge.textContent = 'MENCARI...';
-                gpsMessage.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Mendeteksi GPS, pastikan di luar ruangan';
-                accuracyBar.style.width = '0%';
-                accuracyValue.textContent = '-';
-                sourceValue.textContent = '-';
+            document.getElementById('toastContainer').appendChild(toast);
+            
+            // Simpan fungsi resolve/reject ke window
+            window.manualLocationResolver = resolve;
+            window.manualLocationRejector = reject;
+            
+            setTimeout(() => toast.remove(), 10000);
+        }
+
+        // Gunakan lokasi terakhir yang diketahui
+        window.useLastKnownLocation = function() {
+            if (lastKnownLocation) {
+                showToast('Menggunakan lokasi terakhir', 'info');
+                window.manualLocationResolver(lastKnownLocation);
+            } else {
+                showToast('Tidak ada lokasi terakhir', 'warning');
+                window.manualLocationResolver(null);
+            }
+            document.querySelector('.toast.warning')?.remove();
+        };
+
+        // Skip lokasi
+        window.skipLocation = function() {
+            showToast('Lanjut tanpa lokasi', 'warning');
+            window.manualLocationResolver(null);
+            document.querySelector('.toast.warning')?.remove();
+        };
+
+        // Fungsi untuk menguji lokasi
+        async function testLocation() {
+            showToast('Menguji akurasi GPS...', 'info');
+            
+            try {
+                const location = await getCurrentLocation();
+                
+                // Hitung jarak dari sekolah
+                const distance = calculateDistance(
+                    location.lat, location.lng,
+                    SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
+                );
+                
+                let accuracyClass = 'accuracy-good';
+                if (location.accuracy > 50) accuracyClass = 'accuracy-poor';
+                else if (location.accuracy > 20) accuracyClass = 'accuracy-medium';
+                
+                showToast(
+                    `Lokasi: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)} | ` +
+                    `Akurasi: ±${location.accuracy.toFixed(1)}m | ` +
+                    `Jarak ke sekolah: ${distance.toFixed(2)} km`,
+                    'success'
+                );
+                
+                // Tampilkan di console
+                console.log('📍 TEST LOKASI:', {
+                    lat: location.lat,
+                    lng: location.lng,
+                    accuracy: location.accuracy,
+                    distance: distance,
+                    school: SCHOOL_LOCATION
+                });
+                
+            } catch (error) {
+                console.error('Test lokasi gagal:', error);
+            }
+        }
+
+        // Hitung jarak antara dua koordinat (Haversine formula)
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius bumi dalam km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Generate ID unik
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        }
+
+        // Format tanggal Indonesia (YYYY-MM-DD)
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        // Format waktu
+        function formatTime(date) {
+            return date.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        // Update recent scans
+        function updateRecentScans() {
+            const today = formatDate(new Date());
+            todayScans = attendanceRecords
+                .filter(r => r.tanggal === today && r.metode === 'qr')
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 5);
+            
+            const listEl = document.getElementById('recentList');
+            const countEl = document.getElementById('scanCount');
+            
+            if (todayScans.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">Belum ada scan hari ini</div>';
+                countEl.textContent = '0 hari ini';
                 return;
             }
             
-            const acc = bestLocation.accuracy;
-            const isAccurate = acc <= TARGET_ACCURACY;
+            countEl.textContent = `${todayScans.length} hari ini`;
             
-            if (isAccurate) {
-                gpsCard.className = 'gps-indicator active';
-                gpsBadge.textContent = 'AKURAT ✓';
-                gpsMessage.innerHTML = `✅ Lokasi AKURAT (${acc.toFixed(1)} m) - Siap scan`;
-            } else {
-                gpsCard.className = 'gps-indicator';
-                gpsBadge.textContent = 'BELUM AKURAT';
-                gpsMessage.innerHTML = `⏳ Akurasi masih ${acc.toFixed(1)} m, target < ${TARGET_ACCURACY} m`;
-            }
-            
-            // Progress bar (inverted: semakin kecil akurasi semakin baik)
-            const barWidth = Math.min(100, Math.max(0, 100 - (acc / TARGET_ACCURACY * 100)));
-            accuracyBar.style.width = `${barWidth}%`;
-            accuracyValue.textContent = `${acc.toFixed(1)} m`;
-            sourceValue.textContent = bestLocation.source || (acc < 20 ? 'GPS' : 'Jaringan');
-        }
-
-        function startGPSWatch() {
-            if (!navigator.geolocation) {
-                showToast('Geolocation tidak didukung', 'error');
-                return false;
-            }
-            
-            isWaitingForGPS = true;
-            bestLocation = null;
-            
-            // Tampilkan countdown
-            const countdownEl = document.getElementById('gpsCountdown');
-            countdownEl.classList.remove('hidden');
-            gpsCountdown = 60;
-            countdownEl.textContent = gpsCountdown;
-            
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                gpsCountdown--;
-                countdownEl.textContent = gpsCountdown;
+            listEl.innerHTML = todayScans.map(scan => {
+                const waktu = new Date(scan.timestamp).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 
-                if (gpsCountdown <= 0) {
-                    clearInterval(countdownInterval);
-                    countdownInterval = null;
-                    countdownEl.classList.add('hidden');
-                    
-                    // Tampilkan tombol force continue
-                    document.getElementById('forceContinueBtn').classList.remove('hidden');
-                    showToast('GPS timeout. Klik "LANJUTKAN" untuk absen tanpa akurasi', 'warning');
-                }
-            }, 1000);
-            
-            // Opsi untuk akurasi maksimal
-            const options = {
-                enableHighAccuracy: true,
-                timeout: 30000,
-                maximumAge: 0
-            };
-            
-            // Mulai watch (akan terus update lokasi)
-            watchId = navigator.geolocation.watchPosition(
-                (position) => {
-                    const newLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        accuracy: position.coords.accuracy,
-                        altitude: position.coords.altitude,
-                        altitudeAccuracy: position.coords.altitudeAccuracy,
-                        heading: position.coords.heading,
-                        speed: position.coords.speed,
-                        timestamp: position.timestamp,
-                        source: position.coords.accuracy < 20 ? 'GPS' : 'Jaringan'
-                    };
-                    
-                    // Update jika akurasi lebih baik
-                    if (!bestLocation || newLocation.accuracy < bestLocation.accuracy) {
-                        bestLocation = newLocation;
-                        updateGPSUI();
-                        
-                        // Jika sudah mencapai target akurasi, berhenti mencari
-                        if (bestLocation.accuracy <= TARGET_ACCURACY) {
-                            stopGPSWatch();
-                            showToast(`✅ Akurasi tercapai! ${bestLocation.accuracy.toFixed(1)} m`, 'success');
-                        }
-                    }
-                },
-                (error) => {
-                    console.error('GPS error:', error);
-                    let message = 'Error GPS';
-                    if (error.code === error.PERMISSION_DENIED) {
-                        message = 'Izin lokasi ditolak';
-                    } else if (error.code === error.POSITION_UNAVAILABLE) {
-                        message = 'GPS tidak aktif';
-                    } else if (error.code === error.TIMEOUT) {
-                        message = 'Timeout GPS';
-                    }
-                    
-                    document.getElementById('gpsMessage').innerHTML = `❌ ${message}`;
-                    document.getElementById('gpsStatusBadge').textContent = 'ERROR';
-                },
-                options
-            );
-            
-            return true;
-        }
-
-        function stopGPSWatch() {
-            if (watchId) {
-                navigator.geolocation.clearWatch(watchId);
-                watchId = null;
-            }
-            if (countdownInterval) {
-                clearInterval(countdownInterval);
-                countdownInterval = null;
-            }
-            document.getElementById('gpsCountdown').classList.add('hidden');
-            isWaitingForGPS = false;
-        }
-
-        // Fungsi untuk memaksa lanjut tanpa GPS akurat
-        function forceContinue() {
-            if (confirm('Lanjutkan tanpa akurasi GPS? Lokasi mungkin tidak tepat.')) {
-                forceContinueFlag = true;
-                stopGPSWatch();
-                document.getElementById('forceContinueBtn').classList.add('hidden');
+                // Tampilkan icon lokasi jika ada
+                const locationIcon = scan.location ? '📍' : '❌';
                 
-                if (bestLocation) {
-                    showToast('Melanjutkan dengan akurasi seadanya', 'warning');
-                } else {
-                    bestLocation = null;
-                }
-            }
+                return `
+                    <div class="scan-item">
+                        <div>
+                            <div class="font-medium text-sm">${scan.student_nama}</div>
+                            <div class="text-xs text-gray-500">${scan.student_kelas}</div>
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-semibold">${waktu} ${locationIcon}</div>
+                            <span class="badge badge-success">QR</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
-        // Fungsi untuk mendapatkan lokasi terbaik (dipanggil setelah scan QR)
-        async function waitForAccurateLocation() {
-            if (forceContinueFlag) {
-                // User memaksa lanjut, berikan lokasi terbaik yang ada
-                return bestLocation;
+        // Update debug panel
+        function updateDebugPanel() {
+            const debugContent = document.getElementById('debugContent');
+            if (!debugContent) return;
+            
+            if (students.length === 0) {
+                debugContent.innerHTML = '<p class="text-gray-500">Tidak ada data siswa</p>';
+                return;
             }
             
-            // Tunggu sampai akurasi tercapai atau user force
-            return new Promise((resolve) => {
-                const checkInterval = setInterval(() => {
-                    if (bestLocation && bestLocation.accuracy <= TARGET_ACCURACY) {
-                        clearInterval(checkInterval);
-                        resolve(bestLocation);
-                    } else if (forceContinueFlag) {
-                        clearInterval(checkInterval);
-                        resolve(bestLocation);
-                    }
-                }, 500);
-                
-                // Timeout total 60 detik
-                setTimeout(() => {
-                    clearInterval(checkInterval);
-                    if (!forceContinueFlag) {
-                        forceContinueFlag = true;
-                        document.getElementById('forceContinueBtn').classList.remove('hidden');
-                    }
-                    resolve(bestLocation);
-                }, 60000);
+            let html = '<table style="width:100%; border-collapse:collapse;">';
+            html += '<tr><th style="text-align:left; padding:4px;">NIS DB</th><th style="text-align:left; padding:4px;">Nama</th></tr>';
+            
+            students.slice(0, 10).forEach(s => {
+                html += `<tr>
+                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nis}</td>
+                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nama}</td>
+                </tr>`;
             });
+            
+            if (students.length > 10) {
+                html += `<tr><td colspan="2" style="padding:4px; color:gray;">... dan ${students.length - 10} lainnya</td></tr>`;
+            }
+            
+            html += '</table>';
+            debugContent.innerHTML = html;
+        }
+
+        // Toggle debug panel
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            const btn = document.getElementById('debugBtn');
+            
+            if (panel.style.display === 'none') {
+                panel.style.display = 'block';
+                btn.innerHTML = '<i class="fas fa-times mr-2"></i>Tutup Debug';
+                updateDebugPanel();
+            } else {
+                panel.style.display = 'none';
+                btn.innerHTML = '<i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa';
+            }
         }
 
         // ==================== FUNGSI SCANNER ====================
 
+        // Handle hasil scan QR
         async function onScanSuccess(decodedText) {
             if (isLoading) {
                 showToast('Sedang memproses scan sebelumnya...', 'warning');
@@ -834,7 +888,7 @@
             }
             
             isLoading = true;
-            stopScanner();
+            stopScanner(); // Stop scanner sementara
             
             try {
                 const nisFromQR = decodedText.trim();
@@ -864,6 +918,7 @@
                     return;
                 }
                 
+                // Cek apakah sudah absen hari ini
                 const today = formatDate(new Date());
                 const alreadyAbsent = attendanceRecords.some(r => 
                     r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
@@ -882,10 +937,17 @@
                     return;
                 }
                 
-                // 🔥 TUNGGU LOKASI AKURAT
-                showToast('Menunggu GPS akurat...', 'info');
-                const location = await waitForAccurateLocation();
+                // AMBIL LOKASI GPS DENGAN AKURASI TINGGI
+                let location = null;
+                try {
+                    location = await getCurrentLocation();
+                    console.log('📍 Lokasi berhasil didapatkan:', location);
+                } catch (locError) {
+                    console.warn('⚠️ Lokasi tidak tersedia:', locError);
+                    // Lanjutkan tanpa lokasi
+                }
                 
+                // Buat record absensi BARU
                 const now = new Date();
                 const newAttendance = {
                     id: generateId(),
@@ -897,18 +959,19 @@
                     student_jurusan: student.jurusan,
                     status: 'hadir',
                     metode: 'qr',
-                    location: location,
+                    location: location, // Simpan lokasi
                     keterangan: `Absen via QR (NIS QR: ${nisFromQR})`,
                     tanggal: formatDate(now),
                     timestamp: now.getTime()
                 };
                 
+                // Simpan ke JSONBin
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
+                    // Hitung jarak dari sekolah jika ada lokasi
                     let locationText = 'Tidak tersedia';
                     let accuracyText = '-';
-                    let sourceText = '-';
                     
                     if (location) {
                         const distance = calculateDistance(
@@ -916,18 +979,7 @@
                             SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
                         );
                         locationText = `${distance.toFixed(2)} km dari sekolah`;
-                        
-                        if (location.accuracy < 10) {
-                            accuracyText = `SANGAT AKURAT (${location.accuracy.toFixed(1)} m)`;
-                        } else if (location.accuracy < 30) {
-                            accuracyText = `AKURAT (${location.accuracy.toFixed(1)} m)`;
-                        } else if (location.accuracy < 100) {
-                            accuracyText = `SEDANG (${location.accuracy.toFixed(1)} m)`;
-                        } else {
-                            accuracyText = `RENDAH (${location.accuracy.toFixed(1)} m)`;
-                        }
-                        
-                        sourceText = location.source || (location.accuracy < 20 ? 'GPS' : 'Jaringan');
+                        accuracyText = `±${location.accuracy.toFixed(1)} meter`;
                     }
                     
                     showStatus(
@@ -937,8 +989,7 @@
                         student,
                         nisFromQR,
                         locationText,
-                        accuracyText,
-                        sourceText
+                        accuracyText
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
@@ -966,7 +1017,8 @@
             // Abaikan error scanner
         }
 
-        function showStatus(type, title, message, student, nisFromQR, locationText, accuracyText, sourceText) {
+        // Tampilkan status card setelah scan
+        function showStatus(type, title, message, student, nisFromQR, locationText, accuracyText) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -990,7 +1042,6 @@
                 document.getElementById('detailJurusan').textContent = student.jurusan;
                 document.getElementById('detailLokasi').textContent = locationText || 'Tidak tersedia';
                 document.getElementById('detailAkurasi').textContent = accuracyText || '-';
-                document.getElementById('detailSumber').textContent = sourceText || '-';
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
@@ -998,7 +1049,6 @@
                 document.getElementById('detailNisDB').textContent = '-';
                 document.getElementById('detailLokasi').textContent = '-';
                 document.getElementById('detailAkurasi').textContent = '-';
-                document.getElementById('detailSumber').textContent = '-';
                 detailEl.style.display = 'block';
             }
             
@@ -1007,7 +1057,6 @@
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('debugBtn').style.display = 'none';
-            document.getElementById('forceContinueBtn').classList.add('hidden');
             
             card.style.display = 'block';
         }
@@ -1016,14 +1065,7 @@
             document.querySelector('.scanner-container').style.display = 'block';
             document.getElementById('recentScans').style.display = 'block';
             document.getElementById('debugBtn').style.display = 'block';
-            
             document.getElementById('statusCard').style.display = 'none';
-            
-            // Reset GPS state
-            forceContinueFlag = false;
-            bestLocation = null;
-            startGPSWatch();
-            
             startScanner();
         }
 
@@ -1080,116 +1122,7 @@
             }
         }
 
-        function generateId() {
-            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
-        }
-
-        function formatDate(date) {
-            const year = date.getFullYear();
-            const month = String(date.getMonth() + 1).padStart(2, '0');
-            const day = String(date.getDate()).padStart(2, '0');
-            return `${year}-${month}-${day}`;
-        }
-
-        function formatTime(date) {
-            return date.toLocaleTimeString('id-ID', {
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit'
-            });
-        }
-
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
-        }
-
-        function updateRecentScans() {
-            const today = formatDate(new Date());
-            todayScans = attendanceRecords
-                .filter(r => r.tanggal === today && r.metode === 'qr')
-                .sort((a, b) => b.timestamp - a.timestamp)
-                .slice(0, 5);
-            
-            const listEl = document.getElementById('recentList');
-            const countEl = document.getElementById('scanCount');
-            
-            if (todayScans.length === 0) {
-                listEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-4">Belum ada scan hari ini</div>';
-                countEl.textContent = '0 hari ini';
-                return;
-            }
-            
-            countEl.textContent = `${todayScans.length} hari ini`;
-            
-            listEl.innerHTML = todayScans.map(scan => {
-                const waktu = new Date(scan.timestamp).toLocaleTimeString('id-ID', {
-                    hour: '2-digit',
-                    minute: '2-digit'
-                });
-                
-                return `
-                    <div class="scan-item">
-                        <div>
-                            <div class="font-medium text-sm">${scan.student_nama}</div>
-                            <div class="text-xs text-gray-500">${scan.student_kelas}</div>
-                        </div>
-                        <div class="text-right">
-                            <div class="text-xs font-semibold">${waktu}</div>
-                            <span class="badge badge-success">QR</span>
-                        </div>
-                    </div>
-                `;
-            }).join('');
-        }
-
-        function updateDebugPanel() {
-            const debugContent = document.getElementById('debugContent');
-            if (!debugContent) return;
-            
-            if (students.length === 0) {
-                debugContent.innerHTML = '<p class="text-gray-500">Tidak ada data siswa</p>';
-                return;
-            }
-            
-            let html = '<table style="width:100%; border-collapse:collapse;">';
-            html += '<tr><th style="text-align:left; padding:4px;">NIS DB</th><th style="text-align:left; padding:4px;">Nama</th></tr>';
-            
-            students.slice(0, 10).forEach(s => {
-                html += `<tr>
-                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nis}</td>
-                    <td style="padding:4px; border-bottom:1px solid #ddd;">${s.nama}</td>
-                </tr>`;
-            });
-            
-            if (students.length > 10) {
-                html += `<tr><td colspan="2" style="padding:4px; color:gray;">... dan ${students.length - 10} lainnya</td></tr>`;
-            }
-            
-            html += '</table>';
-            debugContent.innerHTML = html;
-        }
-
-        function toggleDebug() {
-            const panel = document.getElementById('debugPanel');
-            const btn = document.getElementById('debugBtn');
-            
-            if (panel.style.display === 'none') {
-                panel.style.display = 'block';
-                btn.innerHTML = '<i class="fas fa-times mr-2"></i>Tutup Debug';
-                updateDebugPanel();
-            } else {
-                panel.style.display = 'none';
-                btn.innerHTML = '<i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa';
-            }
-        }
+        // ==================== UTILITY ====================
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
@@ -1206,14 +1139,13 @@
             }, 3000);
         }
 
+        // ==================== INITIALIZATION ====================
+
         async function init() {
             showToast('Memuat data siswa...', 'info');
             
             await loadStudents();
             await loadAttendance();
-            
-            // Mulai GPS watch segera
-            startGPSWatch();
             
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
@@ -1229,7 +1161,9 @@
                 if (navigator.permissions) {
                     navigator.permissions.query({ name: 'geolocation' }).then(result => {
                         if (result.state === 'denied') {
-                            showToast('Izin lokasi ditolak. Lokasi tidak akurat.', 'warning');
+                            showToast('Izin lokasi ditolak. Lokasi tidak akan terekam.', 'warning');
+                        } else if (result.state === 'prompt') {
+                            showToast('Izinkan akses lokasi untuk akurasi maksimal', 'info');
                         }
                     });
                 }
@@ -1240,7 +1174,6 @@
         }
 
         window.onload = init;
-        window.forceContinue = forceContinue;
     </script>
 </body>
 </html>
