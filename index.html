@@ -302,8 +302,8 @@
                 <span>Pastikan pencahayaan cukup</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-database"></i>
-                <span>Data akan otomatis tersimpan di server</span>
+                <i class="fas fa-map-marker-alt"></i>
+                <span>Lokasi Anda akan terekam saat scan</span>
             </div>
         </div>
         
@@ -333,6 +333,10 @@
                 <div class="student-detail-item">
                     <span class="label">Jurusan</span>
                     <span class="value" id="detailJurusan">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Lokasi</span>
+                    <span class="value" id="detailLokasi">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Waktu</span>
@@ -387,6 +391,13 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
+        // ==================== KONSTANTA ====================
+        const SCHOOL_LOCATION = {
+            lat: -7.230610592775489,
+            lng: 112.7470361749994,
+            name: "MA Ibnu Husain"
+        };
+
         // KONFIGURASI JSONBIN SAMA PERSIS DENGAN APLIKASI ADMIN & WALI
         const JSONBIN_CONFIG = {
             API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
@@ -502,7 +513,7 @@
             }
         }
 
-        // 🔍 **PERBAIKAN UTAMA: Fungsi pencarian siswa dengan FLEKSIBEL**
+        // 🔍 Fungsi pencarian siswa dengan FLEKSIBEL
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
@@ -522,7 +533,7 @@
                 return student;
             }
             
-            // Strategi 2: Coba hapus leading zeros (misal: 001234 vs 1234)
+            // Strategi 2: Coba hapus leading zeros
             const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) {
@@ -530,8 +541,7 @@
                 return student;
             }
             
-            // Strategi 3: Cari sebagian (misal: QR 16 digit, DB hanya 7 digit terakhir)
-            // Ambil 7-10 digit terakhir (sesuaikan dengan format NIS di DB)
+            // Strategi 3: Cari sebagian (last 7-10 digits)
             const last7Digits = cleanNis.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
             if (student) {
@@ -554,13 +564,73 @@
                 return student;
             }
             
-            // Strategi 5: Jika semua gagal, tampilkan debug
             console.log('❌ Tidak ditemukan. Contoh NIS di DB:', students.slice(0, 3).map(s => s.nis));
             
             return null;
         }
 
-        // Generate ID unik (sama dengan di aplikasi admin)
+        // ==================== FUNGSI GET LOKASI ====================
+        function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation tidak didukung browser ini'));
+                    return;
+                }
+                
+                // Tampilkan toast bahwa sedang mengambil lokasi
+                showToast('Mendapatkan lokasi Anda...', 'info');
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const location = {
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy,
+                            timestamp: position.timestamp
+                        };
+                        console.log('📍 Lokasi didapatkan:', location);
+                        resolve(location);
+                    },
+                    (error) => {
+                        console.error('❌ Gagal mendapatkan lokasi:', error);
+                        let errorMessage = 'Gagal mendapatkan lokasi';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Izin lokasi ditolak. Absensi tetap diproses tanpa lokasi.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Lokasi tidak tersedia.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Timeout mengambil lokasi.';
+                                break;
+                        }
+                        showToast(errorMessage, 'warning');
+                        reject(error);
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+
+        // Hitung jarak antara dua koordinat
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371; // Radius bumi dalam km
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        // Generate ID unik
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
@@ -582,7 +652,7 @@
             });
         }
 
-        // Update recent scans (absensi hari ini)
+        // Update recent scans
         function updateRecentScans() {
             const today = formatDate(new Date());
             todayScans = attendanceRecords
@@ -729,6 +799,16 @@
                     return;
                 }
                 
+                // AMBIL LOKASI GPS
+                let location = null;
+                try {
+                    location = await getCurrentLocation();
+                    console.log('📍 Lokasi berhasil didapatkan:', location);
+                } catch (locError) {
+                    console.warn('⚠️ Lokasi tidak tersedia:', locError);
+                    // Lanjutkan tanpa lokasi
+                }
+                
                 // Buat record absensi BARU
                 const now = new Date();
                 const newAttendance = {
@@ -741,6 +821,7 @@
                     student_jurusan: student.jurusan,
                     status: 'hadir',
                     metode: 'qr',
+                    location: location, // Simpan lokasi
                     keterangan: `Absen via QR (NIS QR: ${nisFromQR})`,
                     tanggal: formatDate(now),
                     timestamp: now.getTime()
@@ -750,13 +831,24 @@
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
+                    // Tampilkan informasi lokasi di status
+                    let locationText = 'Tidak tersedia';
+                    if (location) {
+                        const distance = calculateDistance(
+                            location.lat, location.lng,
+                            SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
+                        );
+                        locationText = `${distance.toFixed(2)} km dari sekolah`;
+                    }
+                    
                     // Tampilkan sukses
                     showStatus(
                         'success', 
                         '✅ Absensi Berhasil!', 
                         `Selamat datang, ${student.nama}`, 
                         student,
-                        nisFromQR
+                        nisFromQR,
+                        locationText
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
@@ -787,7 +879,7 @@
         }
 
         // Tampilkan status card setelah scan
-        function showStatus(type, title, message, student, nisFromQR) {
+        function showStatus(type, title, message, student, nisFromQR, locationText) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -812,12 +904,14 @@
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
+                document.getElementById('detailLokasi').textContent = locationText || 'Tidak tersedia';
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = '-';
-                detailEl.style.display = 'block'; // Tetap tampilkan untuk debug
+                document.getElementById('detailLokasi').textContent = '-';
+                detailEl.style.display = 'block';
             }
             
             // Sembunyikan scanner container
@@ -934,6 +1028,15 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
                 startScanner();
+                
+                // Cek izin lokasi (tidak wajib, tapi kita coba)
+                if (navigator.permissions) {
+                    navigator.permissions.query({ name: 'geolocation' }).then(result => {
+                        if (result.state === 'denied') {
+                            showToast('Izin lokasi ditolak. Lokasi tidak akan terekam.', 'warning');
+                        }
+                    });
+                }
             } catch (err) {
                 showToast('Izinkan akses kamera untuk memindai QR', 'error');
                 console.error('Camera permission error:', err);
