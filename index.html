@@ -177,17 +177,6 @@
             background: #f9fafb;
         }
         
-        .btn-outline {
-            background: transparent;
-            color: #4f46e5;
-            border: 2px solid #4f46e5;
-        }
-        
-        .btn-outline:hover {
-            background: #4f46e5;
-            color: white;
-        }
-        
         .debug-btn {
             background: #f3f4f6;
             color: #4b5563;
@@ -284,41 +273,6 @@
             background: #d1fae5;
             color: #065f46;
         }
-
-        .badge-warning {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .location-picker {
-            background: #f9fafb;
-            border-radius: 12px;
-            padding: 16px;
-            margin: 16px 0;
-            border: 2px solid #e5e7eb;
-        }
-
-        .accuracy-badge {
-            font-size: 11px;
-            padding: 4px 8px;
-            border-radius: 20px;
-            display: inline-block;
-        }
-
-        .accuracy-good {
-            background: #d1fae5;
-            color: #065f46;
-        }
-
-        .accuracy-medium {
-            background: #fef3c7;
-            color: #b45309;
-        }
-
-        .accuracy-poor {
-            background: #fee2e2;
-            color: #dc2626;
-        }
     </style>
 </head>
 <body>
@@ -350,10 +304,6 @@
             <div class="info-item">
                 <i class="fas fa-map-marker-alt"></i>
                 <span>Lokasi Anda akan terekam saat scan</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-crosshairs"></i>
-                <span>Aktifkan GPS untuk akurasi maksimal</span>
             </div>
         </div>
         
@@ -387,10 +337,6 @@
                 <div class="student-detail-item">
                     <span class="label">Lokasi</span>
                     <span class="value" id="detailLokasi">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Akurasi</span>
-                    <span class="value" id="detailAkurasi">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Waktu</span>
@@ -427,12 +373,7 @@
             <i class="fas fa-stop mr-2"></i>Stop Kamera
         </button>
         
-        <!-- Tombol Uji Lokasi -->
-        <button onclick="testLocation()" class="btn btn-outline mt-2">
-            <i class="fas fa-crosshairs mr-2"></i>Uji Akurasi Lokasi
-        </button>
-        
-        <!-- Debug Button -->
+        <!-- Debug Button (untuk testing, bisa dihapus) -->
         <button onclick="toggleDebug()" class="btn debug-btn" id="debugBtn">
             <i class="fas fa-bug mr-2"></i>Debug: Lihat Data Siswa
         </button>
@@ -457,7 +398,7 @@
             name: "MA Ibnu Husain"
         };
 
-        // KONFIGURASI JSONBIN
+        // KONFIGURASI JSONBIN SAMA PERSIS DENGAN APLIKASI ADMIN & WALI
         const JSONBIN_CONFIG = {
             API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
             BINS: {
@@ -474,7 +415,6 @@
         let attendanceRecords = [];
         let todayScans = [];
         let isLoading = false;
-        let lastKnownLocation = null;
 
         // ==================== FUNGSI DATABASE ====================
         
@@ -496,6 +436,7 @@
                 students = Array.isArray(data) ? data : [];
                 
                 console.log('📚 Loaded students:', students.length);
+                console.log('📋 Contoh data:', students[0]);
                 
                 // Update debug panel
                 updateDebugPanel();
@@ -572,38 +513,63 @@
             }
         }
 
-        // Fungsi pencarian siswa
+        // 🔍 Fungsi pencarian siswa dengan FLEKSIBEL
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
                 return null;
             }
             
+            // Bersihkan NIS dari QR (hapus spasi, karakter aneh)
             const cleanNis = String(nisFromQR).trim();
             
-            // Exact match
-            let student = students.find(s => String(s.nis).trim() === cleanNis);
-            if (student) return student;
+            console.log('🔍 Mencari NIS:', cleanNis);
+            console.log('📊 Total siswa:', students.length);
             
-            // Tanpa leading zeros
+            // Strategi 1: Exact match (langsung)
+            let student = students.find(s => String(s.nis).trim() === cleanNis);
+            if (student) {
+                console.log('✅ Ditemukan (exact match):', student);
+                return student;
+            }
+            
+            // Strategi 2: Coba hapus leading zeros
             const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
-            if (student) return student;
+            if (student) {
+                console.log('✅ Ditemukan (tanpa leading zeros):', student);
+                return student;
+            }
             
-            // Last digits
+            // Strategi 3: Cari sebagian (last 7-10 digits)
             const last7Digits = cleanNis.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
-            if (student) return student;
+            if (student) {
+                console.log('✅ Ditemukan (last 7 digits):', student);
+                return student;
+            }
             
-            // Numbers only
+            const last10Digits = cleanNis.slice(-10);
+            student = students.find(s => String(s.nis).endsWith(last10Digits) || String(s.nis).includes(last10Digits));
+            if (student) {
+                console.log('✅ Ditemukan (last 10 digits):', student);
+                return student;
+            }
+            
+            // Strategi 4: Cari dengan regex (angka saja)
             const numbersOnly = cleanNis.replace(/\D/g, '');
             student = students.find(s => String(s.nis).replace(/\D/g, '') === numbersOnly);
-            if (student) return student;
+            if (student) {
+                console.log('✅ Ditemukan (numbers only):', student);
+                return student;
+            }
+            
+            console.log('❌ Tidak ditemukan. Contoh NIS di DB:', students.slice(0, 3).map(s => s.nis));
             
             return null;
         }
 
-        // ==================== FUNGSI GET LOKASI (DIPERBAIKI) ====================
+        // ==================== FUNGSI GET LOKASI ====================
         function getCurrentLocation() {
             return new Promise((resolve, reject) => {
                 if (!navigator.geolocation) {
@@ -611,153 +577,47 @@
                     return;
                 }
                 
-                showToast('Mendapatkan lokasi GPS...', 'info');
-                
-                // Opsi untuk akurasi tinggi
-                const options = {
-                    enableHighAccuracy: true,      // Gunakan GPS jika tersedia
-                    timeout: 15000,                // Timeout 15 detik
-                    maximumAge: 0                   // Selalu ambil data baru
-                };
+                // Tampilkan toast bahwa sedang mengambil lokasi
+                showToast('Mendapatkan lokasi Anda...', 'info');
                 
                 navigator.geolocation.getCurrentPosition(
                     (position) => {
                         const location = {
                             lat: position.coords.latitude,
                             lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy, // Akurasi dalam meter
+                            accuracy: position.coords.accuracy,
                             timestamp: position.timestamp
                         };
-                        
                         console.log('📍 Lokasi didapatkan:', location);
-                        
-                        // Simpan sebagai last known location
-                        lastKnownLocation = location;
-                        
-                        // Tampilkan akurasi
-                        let accuracyMsg = `Akurasi: ±${location.accuracy.toFixed(1)} meter`;
-                        if (location.accuracy < 20) {
-                            showToast(accuracyMsg + ' (Sangat Baik)', 'success');
-                        } else if (location.accuracy < 50) {
-                            showToast(accuracyMsg + ' (Cukup)', 'info');
-                        } else {
-                            showToast(accuracyMsg + ' (Rendah)', 'warning');
-                        }
-                        
                         resolve(location);
                     },
                     (error) => {
                         console.error('❌ Gagal mendapatkan lokasi:', error);
-                        let errorMessage = '';
-                        
+                        let errorMessage = 'Gagal mendapatkan lokasi';
                         switch(error.code) {
                             case error.PERMISSION_DENIED:
-                                errorMessage = 'Izin lokasi ditolak. Aktifkan lokasi di pengaturan.';
+                                errorMessage = 'Izin lokasi ditolak. Absensi tetap diproses tanpa lokasi.';
                                 break;
                             case error.POSITION_UNAVAILABLE:
-                                errorMessage = 'Lokasi tidak tersedia. Pastikan GPS aktif.';
+                                errorMessage = 'Lokasi tidak tersedia.';
                                 break;
                             case error.TIMEOUT:
-                                errorMessage = 'Timeout mengambil lokasi. Coba lagi di tempat terbuka.';
+                                errorMessage = 'Timeout mengambil lokasi.';
                                 break;
-                            default:
-                                errorMessage = 'Gagal mendapatkan lokasi.';
                         }
-                        
-                        showToast(errorMessage, 'error');
-                        
-                        // Tawarkan untuk menggunakan lokasi manual
-                        askManualLocation(resolve, reject);
+                        showToast(errorMessage, 'warning');
+                        reject(error);
                     },
-                    options
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
                 );
             });
         }
 
-        // Fungsi untuk meminta lokasi manual jika GPS gagal
-        function askManualLocation(resolve, reject) {
-            const toast = document.createElement('div');
-            toast.className = 'toast warning';
-            toast.style.zIndex = '10000';
-            toast.innerHTML = `
-                <i class="fas fa-exclamation-triangle text-xl"></i>
-                <div class="flex-1">
-                    <p class="font-bold">Gagal mendapatkan GPS</p>
-                    <p class="text-sm opacity-90">Ingin memasukkan lokasi manual?</p>
-                    <div class="flex gap-2 mt-2">
-                        <button onclick="useLastKnownLocation()" class="text-xs bg-white text-gray-800 px-3 py-1 rounded-lg">Gunakan Lokasi Terakhir</button>
-                        <button onclick="skipLocation()" class="text-xs bg-transparent border border-white text-white px-3 py-1 rounded-lg">Lanjut Tanpa Lokasi</button>
-                    </div>
-                </div>
-            `;
-            
-            document.getElementById('toastContainer').appendChild(toast);
-            
-            // Simpan fungsi resolve/reject ke window
-            window.manualLocationResolver = resolve;
-            window.manualLocationRejector = reject;
-            
-            setTimeout(() => toast.remove(), 10000);
-        }
-
-        // Gunakan lokasi terakhir yang diketahui
-        window.useLastKnownLocation = function() {
-            if (lastKnownLocation) {
-                showToast('Menggunakan lokasi terakhir', 'info');
-                window.manualLocationResolver(lastKnownLocation);
-            } else {
-                showToast('Tidak ada lokasi terakhir', 'warning');
-                window.manualLocationResolver(null);
-            }
-            document.querySelector('.toast.warning')?.remove();
-        };
-
-        // Skip lokasi
-        window.skipLocation = function() {
-            showToast('Lanjut tanpa lokasi', 'warning');
-            window.manualLocationResolver(null);
-            document.querySelector('.toast.warning')?.remove();
-        };
-
-        // Fungsi untuk menguji lokasi
-        async function testLocation() {
-            showToast('Menguji akurasi GPS...', 'info');
-            
-            try {
-                const location = await getCurrentLocation();
-                
-                // Hitung jarak dari sekolah
-                const distance = calculateDistance(
-                    location.lat, location.lng,
-                    SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
-                );
-                
-                let accuracyClass = 'accuracy-good';
-                if (location.accuracy > 50) accuracyClass = 'accuracy-poor';
-                else if (location.accuracy > 20) accuracyClass = 'accuracy-medium';
-                
-                showToast(
-                    `Lokasi: ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)} | ` +
-                    `Akurasi: ±${location.accuracy.toFixed(1)}m | ` +
-                    `Jarak ke sekolah: ${distance.toFixed(2)} km`,
-                    'success'
-                );
-                
-                // Tampilkan di console
-                console.log('📍 TEST LOKASI:', {
-                    lat: location.lat,
-                    lng: location.lng,
-                    accuracy: location.accuracy,
-                    distance: distance,
-                    school: SCHOOL_LOCATION
-                });
-                
-            } catch (error) {
-                console.error('Test lokasi gagal:', error);
-            }
-        }
-
-        // Hitung jarak antara dua koordinat (Haversine formula)
+        // Hitung jarak antara dua koordinat
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371; // Radius bumi dalam km
             const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -817,9 +677,6 @@
                     minute: '2-digit'
                 });
                 
-                // Tampilkan icon lokasi jika ada
-                const locationIcon = scan.location ? '📍' : '❌';
-                
                 return `
                     <div class="scan-item">
                         <div>
@@ -827,7 +684,7 @@
                             <div class="text-xs text-gray-500">${scan.student_kelas}</div>
                         </div>
                         <div class="text-right">
-                            <div class="text-xs font-semibold">${waktu} ${locationIcon}</div>
+                            <div class="text-xs font-semibold">${waktu}</div>
                             <span class="badge badge-success">QR</span>
                         </div>
                     </div>
@@ -891,14 +748,17 @@
             stopScanner(); // Stop scanner sementara
             
             try {
+                // decodedText = NIS siswa dari QR
                 const nisFromQR = decodedText.trim();
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
                 showToast('Memproses scan...', 'info');
                 
+                // Cari siswa di database dengan berbagai strategi
                 const student = findStudentByNIS(nisFromQR);
                 
                 if (!student) {
+                    // Siswa tidak ditemukan
                     showStatus(
                         'error', 
                         '❌ Siswa Tidak Ditemukan', 
@@ -908,6 +768,7 @@
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
                     
+                    // Tampilkan debug otomatis
                     setTimeout(() => {
                         if (document.getElementById('debugPanel').style.display === 'none') {
                             toggleDebug();
@@ -925,6 +786,7 @@
                 );
                 
                 if (alreadyAbsent) {
+                    // Sudah absen hari ini
                     showStatus(
                         'warning', 
                         '⚠️ Sudah Absen Hari Ini', 
@@ -937,7 +799,7 @@
                     return;
                 }
                 
-                // AMBIL LOKASI GPS DENGAN AKURASI TINGGI
+                // AMBIL LOKASI GPS
                 let location = null;
                 try {
                     location = await getCurrentLocation();
@@ -969,30 +831,28 @@
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
-                    // Hitung jarak dari sekolah jika ada lokasi
+                    // Tampilkan informasi lokasi di status
                     let locationText = 'Tidak tersedia';
-                    let accuracyText = '-';
-                    
                     if (location) {
                         const distance = calculateDistance(
                             location.lat, location.lng,
                             SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
                         );
                         locationText = `${distance.toFixed(2)} km dari sekolah`;
-                        accuracyText = `±${location.accuracy.toFixed(1)} meter`;
                     }
                     
+                    // Tampilkan sukses
                     showStatus(
                         'success', 
                         '✅ Absensi Berhasil!', 
                         `Selamat datang, ${student.nama}`, 
                         student,
                         nisFromQR,
-                        locationText,
-                        accuracyText
+                        locationText
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
+                    // Reload data dari server (untuk memastikan sync)
                     await loadAttendance();
                 } else {
                     showStatus(
@@ -1014,19 +874,22 @@
         }
 
         function onScanError(error) {
-            // Abaikan error scanner
+            // Abaikan error scanner (biasanya karena kamera masih mencari)
+            // console.log('Scan error:', error);
         }
 
         // Tampilkan status card setelah scan
-        function showStatus(type, title, message, student, nisFromQR, locationText, accuracyText) {
+        function showStatus(type, title, message, student, nisFromQR, locationText) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
             const messageEl = document.getElementById('statusMessage');
             const detailEl = document.getElementById('studentDetail');
             
+            // Reset classes
             card.className = 'status-card ' + type;
             
+            // Set icon
             if (type === 'success') icon.innerHTML = '✅';
             else if (type === 'error') icon.innerHTML = '❌';
             else if (type === 'warning') icon.innerHTML = '⚠️';
@@ -1034,6 +897,7 @@
             titleEl.textContent = title;
             messageEl.textContent = message;
             
+            // Tampilkan/sembunyikan detail siswa
             if (student) {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = student.nis;
@@ -1041,31 +905,36 @@
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
                 document.getElementById('detailLokasi').textContent = locationText || 'Tidak tersedia';
-                document.getElementById('detailAkurasi').textContent = accuracyText || '-';
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = '-';
                 document.getElementById('detailLokasi').textContent = '-';
-                document.getElementById('detailAkurasi').textContent = '-';
                 detailEl.style.display = 'block';
             }
             
+            // Sembunyikan scanner container
             document.querySelector('.scanner-container').style.display = 'none';
             document.getElementById('recentScans').style.display = 'none';
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('debugBtn').style.display = 'none';
             
+            // Tampilkan card
             card.style.display = 'block';
         }
 
         function resetScanner() {
+            // Tampilkan scanner container
             document.querySelector('.scanner-container').style.display = 'block';
             document.getElementById('recentScans').style.display = 'block';
             document.getElementById('debugBtn').style.display = 'block';
+            
+            // Sembunyikan status card
             document.getElementById('statusCard').style.display = 'none';
+            
+            // Mulai scanner lagi
             startScanner();
         }
 
@@ -1144,26 +1013,27 @@
         async function init() {
             showToast('Memuat data siswa...', 'info');
             
+            // Load data dari JSONBin
             await loadStudents();
             await loadAttendance();
             
+            // Cek library
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
             }
             
+            // Cek izin kamera
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
                 startScanner();
                 
-                // Cek izin lokasi
+                // Cek izin lokasi (tidak wajib, tapi kita coba)
                 if (navigator.permissions) {
                     navigator.permissions.query({ name: 'geolocation' }).then(result => {
                         if (result.state === 'denied') {
                             showToast('Izin lokasi ditolak. Lokasi tidak akan terekam.', 'warning');
-                        } else if (result.state === 'prompt') {
-                            showToast('Izinkan akses lokasi untuk akurasi maksimal', 'info');
                         }
                     });
                 }
@@ -1173,6 +1043,7 @@
             }
         }
 
+        // Auto-start
         window.onload = init;
     </script>
 </body>
