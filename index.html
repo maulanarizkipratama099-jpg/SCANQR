@@ -274,13 +274,16 @@
             color: #065f46;
         }
 
-        .location-info {
-            background: #e0f2fe;
-            border-left: 3px solid #0284c7;
-            padding: 8px;
-            border-radius: 6px;
-            font-size: 12px;
-            margin-top: 8px;
+        .location-warning {
+            font-size: 11px;
+            color: #f59e0b;
+            margin-top: 4px;
+        }
+
+        .location-success {
+            font-size: 11px;
+            color: #10b981;
+            margin-top: 4px;
         }
     </style>
 </head>
@@ -311,12 +314,8 @@
                 <span>Pastikan pencahayaan cukup</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-database"></i>
-                <span>Data akan otomatis tersimpan di server</span>
-            </div>
-            <div class="info-item">
                 <i class="fas fa-map-marker-alt"></i>
-                <span>Lokasi akan terekam otomatis</span>
+                <span>Lokasi akan otomatis terekam</span>
             </div>
         </div>
         
@@ -404,7 +403,7 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // ==================== KONFIGURASI JSONBIN ====================
+        // KONFIGURASI JSONBIN SAMA PERSIS DENGAN APLIKASI ADMIN & WALI
         const JSONBIN_CONFIG = {
             API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
             BINS: {
@@ -414,12 +413,11 @@
             BASE_URL: "https://api.jsonbin.io/v3/b"
         };
 
-        // ==================== KONSTANTA LOKASI SEKOLAH ====================
-        const SCHOOL_LOCATION = {
+        // KONFIGURASI SEKOLAH
+        const SCHOOL_COORDS = {
             lat: -7.230610592775489,
             lng: 112.7470361749994,
-            name: "MA Ibnu Husain",
-            address: "Jl. Irawati 1 No. 15-17, Surabaya"
+            name: "MA Ibnu Husain"
         };
 
         // STATE
@@ -451,6 +449,9 @@
                 students = Array.isArray(data) ? data : [];
                 
                 console.log('📚 Loaded students:', students.length);
+                console.log('📋 Contoh data:', students[0]);
+                
+                // Update debug panel
                 updateDebugPanel();
                 
                 return students;
@@ -477,6 +478,7 @@
                 attendanceRecords = Array.isArray(data) ? data : [];
                 console.log('📋 Loaded attendance:', attendanceRecords.length);
                 
+                // Update recent scans (hari ini)
                 updateRecentScans();
                 
                 return attendanceRecords;
@@ -491,8 +493,10 @@
             try {
                 showToast('Menyimpan ke server...', 'info');
                 
+                // Tambahkan ke array lokal
                 attendanceRecords.push(newRecord);
                 
+                // Simpan ke JSONBin
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
                     method: 'PUT',
                     headers: {
@@ -506,6 +510,8 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 console.log('✅ Absensi tersimpan:', newRecord);
+                
+                // Update tampilan recent scans
                 updateRecentScans();
                 
                 return true;
@@ -513,63 +519,14 @@
                 console.error('❌ Gagal simpan absensi:', error);
                 showToast('Gagal menyimpan ke server: ' + error.message, 'error');
                 
+                // Kembalikan array ke keadaan semula (rollback)
                 attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
+                
                 return false;
             }
         }
 
-        // ==================== FUNGSI LOKASI ====================
-        function getCurrentLocation() {
-            return new Promise((resolve, reject) => {
-                if (!navigator.geolocation) {
-                    reject(new Error('Geolocation tidak didukung browser ini'));
-                    return;
-                }
-                
-                // Timeout 10 detik
-                const timeout = setTimeout(() => {
-                    reject(new Error('Timeout mendapatkan lokasi'));
-                }, 10000);
-                
-                navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                        clearTimeout(timeout);
-                        resolve({
-                            lat: position.coords.latitude,
-                            lng: position.coords.longitude,
-                            accuracy: position.coords.accuracy
-                        });
-                    },
-                    (error) => {
-                        clearTimeout(timeout);
-                        reject(error);
-                    },
-                    {
-                        enableHighAccuracy: true,
-                        timeout: 10000,
-                        maximumAge: 0
-                    }
-                );
-            });
-        }
-
-        // Hitung jarak antara dua koordinat (dalam meter)
-        function calculateDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371e3; // Radius bumi dalam meter
-            const φ1 = lat1 * Math.PI/180;
-            const φ2 = lat2 * Math.PI/180;
-            const Δφ = (lat2-lat1) * Math.PI/180;
-            const Δλ = (lon2-lon1) * Math.PI/180;
-
-            const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
-                    Math.cos(φ1) * Math.cos(φ2) *
-                    Math.sin(Δλ/2) * Math.sin(Δλ/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-
-            return R * c; // dalam meter
-        }
-
-        // ==================== FUNGSI PENCARIAN SISWA ====================
+        // 🔍 Fungsi pencarian siswa dengan FLEKSIBEL
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
@@ -577,7 +534,9 @@
             }
             
             const cleanNis = String(nisFromQR).trim();
+            
             console.log('🔍 Mencari NIS:', cleanNis);
+            console.log('📊 Total siswa:', students.length);
             
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) {
@@ -599,6 +558,13 @@
                 return student;
             }
             
+            const last10Digits = cleanNis.slice(-10);
+            student = students.find(s => String(s.nis).endsWith(last10Digits) || String(s.nis).includes(last10Digits));
+            if (student) {
+                console.log('✅ Ditemukan (last 10 digits):', student);
+                return student;
+            }
+            
             const numbersOnly = cleanNis.replace(/\D/g, '');
             student = students.find(s => String(s.nis).replace(/\D/g, '') === numbersOnly);
             if (student) {
@@ -607,7 +573,79 @@
             }
             
             console.log('❌ Tidak ditemukan. Contoh NIS di DB:', students.slice(0, 3).map(s => s.nis));
+            
             return null;
+        }
+
+        // ==================== FUNGSI LOKASI ====================
+        async function getCurrentLocation() {
+            return new Promise((resolve, reject) => {
+                if (!navigator.geolocation) {
+                    reject(new Error('Geolocation tidak didukung browser ini'));
+                    return;
+                }
+                
+                const options = {
+                    enableHighAccuracy: true,
+                    timeout: 10000,
+                    maximumAge: 0
+                };
+                
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        resolve({
+                            lat: position.coords.latitude,
+                            lng: position.coords.longitude,
+                            accuracy: position.coords.accuracy
+                        });
+                    },
+                    (error) => {
+                        let errorMessage = 'Gagal mendapatkan lokasi';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMessage = 'Izin lokasi ditolak';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMessage = 'Lokasi tidak tersedia';
+                                break;
+                            case error.TIMEOUT:
+                                errorMessage = 'Timeout mengambil lokasi';
+                                break;
+                        }
+                        reject(new Error(errorMessage));
+                    },
+                    options
+                );
+            });
+        }
+
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function isInSchool(lat, lng) {
+            if (!lat || !lng) return false;
+            const distance = calculateDistance(lat, lng, SCHOOL_COORDS.lat, SCHOOL_COORDS.lng);
+            return distance < 0.1;
+        }
+
+        function getLocationStatus(lat, lng) {
+            if (!lat || !lng) return { text: 'Lokasi tidak diketahui', inSchool: false };
+            const inSchool = isInSchool(lat, lng);
+            const distance = calculateDistance(lat, lng, SCHOOL_COORDS.lat, SCHOOL_COORDS.lng).toFixed(2);
+            return {
+                text: inSchool ? `✅ Di Sekolah (${distance} km)` : `⚠️ Luar Sekolah (${distance} km)`,
+                inSchool: inSchool,
+                distance: distance
+            };
         }
 
         // Generate ID unik
@@ -615,7 +653,7 @@
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
-        // Format tanggal
+        // Format tanggal Indonesia (YYYY-MM-DD)
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -632,7 +670,7 @@
             });
         }
 
-        // Update recent scans
+        // Update recent scans (absensi hari ini)
         function updateRecentScans() {
             const today = formatDate(new Date());
             todayScans = attendanceRecords
@@ -657,15 +695,19 @@
                     minute: '2-digit'
                 });
                 
-                const locationText = scan.location ? 
-                    `<div class="text-xs text-gray-400"><i class="fas fa-map-marker-alt mr-1"></i>Lokasi terekam</div>` : '';
+                const locationStatus = scan.latitude && scan.longitude ? 
+                    getLocationStatus(scan.latitude, scan.longitude) : null;
                 
                 return `
                     <div class="scan-item">
                         <div>
                             <div class="font-medium text-sm">${scan.student_nama}</div>
                             <div class="text-xs text-gray-500">${scan.student_kelas}</div>
-                            ${locationText}
+                            ${locationStatus ? 
+                                `<div class="text-xs ${locationStatus.inSchool ? 'text-green-600' : 'text-orange-600'}">
+                                    <i class="fas fa-map-marker-alt mr-1"></i>${locationStatus.distance} km
+                                </div>` : ''
+                            }
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-semibold">${waktu}</div>
@@ -729,47 +771,20 @@
             }
             
             isLoading = true;
-            stopScanner();
+            stopScanner(); // Stop scanner sementara
             
             try {
+                // decodedText = NIS siswa dari QR
                 const nisFromQR = decodedText.trim();
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
                 showToast('Memproses scan...', 'info');
-                showToast('Mendapatkan lokasi...', 'info');
                 
-                // Dapatkan lokasi
-                let location = null;
-                let locationName = null;
-                let distance = null;
-                
-                try {
-                    const pos = await getCurrentLocation();
-                    location = {
-                        lat: pos.lat,
-                        lng: pos.lng,
-                        accuracy: pos.accuracy
-                    };
-                    
-                    // Hitung jarak dari sekolah
-                    distance = calculateDistance(
-                        pos.lat, pos.lng,
-                        SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng
-                    );
-                    
-                    locationName = distance < 100 ? "Di dalam sekolah" : 
-                                  distance < 500 ? "Sekitar sekolah" : 
-                                  "Lokasi luar";
-                    
-                    console.log(`📍 Lokasi: ${pos.lat}, ${pos.lng} (jarak: ${distance.toFixed(0)}m)`);
-                } catch (locError) {
-                    console.warn('Gagal dapat lokasi:', locError);
-                    showToast('Gagal mendapatkan lokasi, absen tetap diproses', 'warning');
-                }
-                
+                // Cari siswa di database dengan berbagai strategi
                 const student = findStudentByNIS(nisFromQR);
                 
                 if (!student) {
+                    // Siswa tidak ditemukan
                     showStatus(
                         'error', 
                         '❌ Siswa Tidak Ditemukan', 
@@ -779,6 +794,7 @@
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
                     
+                    // Tampilkan debug otomatis
                     setTimeout(() => {
                         if (document.getElementById('debugPanel').style.display === 'none') {
                             toggleDebug();
@@ -789,12 +805,14 @@
                     return;
                 }
                 
+                // Cek apakah sudah absen hari ini
                 const today = formatDate(new Date());
                 const alreadyAbsent = attendanceRecords.some(r => 
                     r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
                 );
                 
                 if (alreadyAbsent) {
+                    // Sudah absen hari ini
                     showStatus(
                         'warning', 
                         '⚠️ Sudah Absen Hari Ini', 
@@ -807,6 +825,17 @@
                     return;
                 }
                 
+                // Dapatkan lokasi siswa
+                let location = null;
+                try {
+                    location = await getCurrentLocation();
+                    showToast('Lokasi berhasil didapatkan', 'success');
+                } catch (error) {
+                    console.warn('Gagal mendapatkan lokasi:', error.message);
+                    showToast('Lokasi tidak dapat direkam: ' + error.message, 'warning');
+                }
+                
+                // Buat record absensi BARU
                 const now = new Date();
                 const newAttendance = {
                     id: generateId(),
@@ -822,25 +851,27 @@
                     keterangan: `Absen via QR (NIS QR: ${nisFromQR})`,
                     tanggal: formatDate(now),
                     timestamp: now.getTime(),
-                    location: location,
-                    location_name: locationName,
-                    distance_from_school: distance
+                    latitude: location ? location.lat : null,
+                    longitude: location ? location.lng : null,
+                    location_accuracy: location ? location.accuracy : null
                 };
                 
+                // Simpan ke JSONBin
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
+                    // Tampilkan sukses
                     showStatus(
                         'success', 
                         '✅ Absensi Berhasil!', 
                         `Selamat datang, ${student.nama}`, 
                         student,
                         nisFromQR,
-                        location,
-                        distance
+                        location
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
+                    // Reload data dari server (untuk memastikan sync)
                     await loadAttendance();
                 } else {
                     showStatus(
@@ -866,15 +897,17 @@
         }
 
         // Tampilkan status card setelah scan
-        function showStatus(type, title, message, student, nisFromQR, location = null, distance = null) {
+        function showStatus(type, title, message, student, nisFromQR, location) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
             const messageEl = document.getElementById('statusMessage');
             const detailEl = document.getElementById('studentDetail');
             
+            // Reset classes
             card.className = 'status-card ' + type;
             
+            // Set icon
             if (type === 'success') icon.innerHTML = '✅';
             else if (type === 'error') icon.innerHTML = '❌';
             else if (type === 'warning') icon.innerHTML = '⚠️';
@@ -882,6 +915,7 @@
             titleEl.textContent = title;
             messageEl.textContent = message;
             
+            // Tampilkan/sembunyikan detail siswa
             if (student) {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = student.nis;
@@ -890,17 +924,13 @@
                 document.getElementById('detailJurusan').textContent = student.jurusan;
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 
-                let lokasiText = '-';
+                // Tampilkan lokasi
                 if (location) {
-                    lokasiText = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}`;
-                    if (distance !== null) {
-                        const jarakText = distance < 1000 ? 
-                            `${distance.toFixed(0)} m` : 
-                            `${(distance/1000).toFixed(2)} km`;
-                        lokasiText += ` (jarak ${jarakText})`;
-                    }
+                    const locationStatus = getLocationStatus(location.lat, location.lng);
+                    document.getElementById('detailLokasi').textContent = locationStatus.text;
+                } else {
+                    document.getElementById('detailLokasi').textContent = 'Lokasi tidak terekam';
                 }
-                document.getElementById('detailLokasi').textContent = lokasiText;
                 
                 detailEl.style.display = 'block';
             } else {
@@ -910,22 +940,27 @@
                 detailEl.style.display = 'block';
             }
             
+            // Sembunyikan scanner container
             document.querySelector('.scanner-container').style.display = 'none';
             document.getElementById('recentScans').style.display = 'none';
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('debugBtn').style.display = 'none';
             
+            // Tampilkan card
             card.style.display = 'block';
         }
 
         function resetScanner() {
+            // Tampilkan scanner container
             document.querySelector('.scanner-container').style.display = 'block';
             document.getElementById('recentScans').style.display = 'block';
             document.getElementById('debugBtn').style.display = 'block';
             
+            // Sembunyikan status card
             document.getElementById('statusCard').style.display = 'none';
             
+            // Mulai scanner lagi
             startScanner();
         }
 
@@ -1004,26 +1039,17 @@
         async function init() {
             showToast('Memuat data siswa...', 'info');
             
+            // Load data dari JSONBin
             await loadStudents();
             await loadAttendance();
             
+            // Cek library
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
             }
             
-            // Cek izin lokasi
-            try {
-                if (navigator.permissions) {
-                    const result = await navigator.permissions.query({ name: 'geolocation' });
-                    if (result.state === 'denied') {
-                        showToast('Izin lokasi diperlukan untuk merekam tempat absen', 'warning');
-                    }
-                }
-            } catch (e) {
-                // Abaikan
-            }
-            
+            // Cek izin kamera
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
@@ -1034,6 +1060,7 @@
             }
         }
 
+        // Auto-start
         window.onload = init;
     </script>
 </body>
