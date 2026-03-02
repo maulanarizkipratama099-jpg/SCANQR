@@ -147,11 +147,6 @@
             border-left: 4px solid #10b981;
         }
         
-        .status-card.pulang {
-            display: block;
-            border-left: 4px solid #3b82f6;
-        }
-        
         .status-card.error {
             display: block;
             border-left: 4px solid #ef4444;
@@ -223,11 +218,6 @@
             background: #f9fafb;
         }
         
-        .btn-pulang {
-            background: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
-            color: white;
-        }
-        
         .toast {
             position: fixed;
             bottom: 20px;
@@ -247,7 +237,6 @@
         }
         
         .toast.success { background: #10b981; }
-        .toast.pulang { background: #3b82f6; }
         .toast.error { background: #ef4444; }
         .toast.info { background: #3b82f6; }
         .toast.warning { background: #f59e0b; }
@@ -317,11 +306,6 @@
             color: #065f46;
         }
         
-        .badge-pulang {
-            background: #dbeafe;
-            color: #1e40af;
-        }
-        
         .badge-location {
             background: #e0e7ff;
             color: #4f46e5;
@@ -333,14 +317,6 @@
             border-radius: 12px;
             margin-top: 8px;
             border: 1px solid #e5e7eb;
-        }
-        
-        .time-badge {
-            background: #f3f4f6;
-            padding: 2px 8px;
-            border-radius: 12px;
-            font-size: 11px;
-            color: #4b5563;
         }
     </style>
 </head>
@@ -381,8 +357,8 @@
                 <span>Radius absensi: 100 meter dari sekolah</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <span>Scan pagi = Hadir, Scan sore = Pulang</span>
+                <i class="fas fa-sun"></i>
+                <span>Pastikan GPS dan kamera aktif</span>
             </div>
         </div>
         
@@ -412,10 +388,6 @@
                 <div class="student-detail-item">
                     <span class="label">Jurusan</span>
                     <span class="value" id="detailJurusan">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Status</span>
-                    <span class="value" id="detailStatus">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Lokasi</span>
@@ -484,7 +456,7 @@
         const SCHOOL_LOCATION = {
             lat: -7.230636,
             lng: 112.749601,
-            radius: 100,
+            radius: 100, // meter
             address: "Jl. Irawati 1 No. 15-17, Surabaya"
         };
 
@@ -501,6 +473,7 @@
 
         // ==================== FUNGSI LOKASI ====================
         
+        // Hitung jarak menggunakan formula Haversine
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const φ1 = lat1 * Math.PI/180;
@@ -516,12 +489,14 @@
             return R * c;
         }
 
+        // Cek apakah dalam radius sekolah
         function isWithinSchoolRadius(lat, lng) {
             if (!lat || !lng) return false;
             const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
             return distance <= SCHOOL_LOCATION.radius;
         }
 
+        // Dapatkan status lokasi
         function getLocationStatus(lat, lng) {
             if (!lat || !lng) return { valid: false, text: 'Lokasi tidak diketahui', class: '', distance: null };
             
@@ -536,6 +511,7 @@
             };
         }
 
+        // Mulai tracking lokasi
         function startLocationTracking() {
             if (!navigator.geolocation) {
                 showToast('Browser tidak mendukung GPS', 'error');
@@ -550,12 +526,14 @@
             locationDiv.classList.add('visible');
             locationText.textContent = 'Mendapatkan lokasi...';
 
+            // Options untuk lebih akurat
             const options = {
                 enableHighAccuracy: true,
                 timeout: 10000,
                 maximumAge: 0
             };
 
+            // Dapatkan lokasi sekali untuk inisialisasi
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     currentLocation = {
@@ -592,6 +570,7 @@
                 options
             );
 
+            // Pantau perubahan lokasi
             watchId = navigator.geolocation.watchPosition(
                 (position) => {
                     currentLocation = {
@@ -619,6 +598,7 @@
             );
         }
 
+        // Stop tracking lokasi
         function stopLocationTracking() {
             if (watchId) {
                 navigator.geolocation.clearWatch(watchId);
@@ -749,6 +729,7 @@
             }
         }
 
+        // 🔍 Fungsi pencarian siswa
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
@@ -759,12 +740,14 @@
             
             console.log('🔍 Mencari NIS:', cleanNis);
             
+            // Exact match
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) {
                 console.log('✅ Ditemukan (exact match):', student);
                 return student;
             }
             
+            // Tanpa leading zeros
             const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) {
@@ -772,6 +755,7 @@
                 return student;
             }
             
+            // Last 7 digits
             const last7Digits = cleanNis.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
             if (student) {
@@ -801,14 +785,6 @@
             });
         }
 
-        function getCurrentShift() {
-            const now = new Date();
-            const hours = now.getHours();
-            // Shift pagi: 00:00 - 12:00 -> status 'hadir'
-            // Shift sore: 12:00 - 23:59 -> status 'pulang'
-            return hours < 12 ? 'hadir' : 'pulang';
-        }
-
         function updateRecentScans() {
             const today = formatDate(new Date());
             todayScans = attendanceRecords
@@ -834,26 +810,21 @@
                 });
                 
                 const locationValid = scan.location && isWithinSchoolRadius(scan.location.lat, scan.location.lng);
-                const statusClass = scan.status === 'hadir' ? 'badge-success' : 'badge-pulang';
-                const statusText = scan.status === 'hadir' ? 'Hadir' : 'Pulang';
                 
                 return `
                     <div class="scan-item">
                         <div>
                             <div class="font-medium text-sm">${scan.student_nama}</div>
                             <div class="text-xs text-gray-500">${scan.student_kelas}</div>
-                            <div class="flex items-center gap-1 mt-1">
-                                <span class="badge ${statusClass}">${statusText}</span>
-                                ${scan.location ? `
-                                    <span class="text-xs ${locationValid ? 'text-green-600' : 'text-red-600'}">
-                                        <i class="fas fa-map-pin"></i>
-                                    </span>
-                                ` : ''}
-                            </div>
+                            ${scan.location ? `
+                                <div class="text-xs ${locationValid ? 'text-green-600' : 'text-red-600'}">
+                                    <i class="fas fa-map-pin mr-1"></i>${locationValid ? 'Dalam radius' : 'Luar radius'}
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-semibold">${waktu}</div>
-                            <span class="time-badge">QR</span>
+                            <span class="badge badge-success">QR</span>
                         </div>
                     </div>
                 `;
@@ -869,7 +840,7 @@
             }
             
             isLoading = true;
-            stopScanner();
+            stopScanner(); // Stop scanner sementara
             
             try {
                 const nisFromQR = decodedText.trim();
@@ -877,6 +848,7 @@
                 
                 showToast('Memproses scan...', 'info');
                 
+                // Cek lokasi terlebih dahulu
                 if (!currentLocation) {
                     showStatus(
                         'error',
@@ -890,9 +862,11 @@
                     return;
                 }
                 
+                // Cek apakah dalam radius sekolah
                 const locationValid = isWithinSchoolRadius(currentLocation.lat, currentLocation.lng);
                 const locationStatus = getLocationStatus(currentLocation.lat, currentLocation.lng);
                 
+                // Cari siswa
                 const student = findStudentByNIS(nisFromQR);
                 
                 if (!student) {
@@ -910,32 +884,38 @@
                     return;
                 }
                 
+                // Cek apakah sudah absen hari ini
                 const today = formatDate(new Date());
-                const currentShift = getCurrentShift();
-                
-                // Cek apakah sudah absen untuk shift ini
                 const alreadyAbsent = attendanceRecords.some(r => 
-                    r.student_id === student.id && 
-                    r.tanggal === today && 
-                    r.status === currentShift
+                    r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
                 );
                 
                 if (alreadyAbsent) {
-                    const shiftText = currentShift === 'hadir' ? 'absensi pagi (hadir)' : 'absensi sore (pulang)';
                     showStatus(
                         'warning', 
-                        '⚠️ Sudah Absen', 
-                        `${student.nama} sudah melakukan ${shiftText} hari ini.`, 
+                        '⚠️ Sudah Absen Hari Ini', 
+                        `${student.nama} sudah melakukan absensi hari ini.`, 
                         student,
                         nisFromQR,
                         currentLocation,
                         locationStatus
                     );
-                    showToast(`Sudah ${shiftText}`, 'warning');
+                    showToast('Sudah absen hari ini', 'warning');
                     isLoading = false;
                     return;
                 }
                 
+                // Jika lokasi tidak valid, tetap bisa absen tapi dengan peringatan
+                // (opsional: bisa diubah untuk menolak absen jika di luar radius)
+                if (!locationValid) {
+                    // Uncomment baris di bawah jika ingin menolak absen di luar radius
+                    // showStatus('error', '❌ Di Luar Radius Sekolah', `Anda berada ${locationStatus.distance}m dari sekolah. Absensi hanya dalam radius ${SCHOOL_LOCATION.radius}m.`, student, nisFromQR, currentLocation, locationStatus);
+                    // showToast('Anda di luar radius sekolah', 'error');
+                    // isLoading = false;
+                    // return;
+                }
+                
+                // Buat record absensi dengan lokasi
                 const now = new Date();
                 const newAttendance = {
                     id: generateId(),
@@ -945,7 +925,7 @@
                     student_kelas: student.kelas,
                     student_jurusan: student.jurusan,
                     student_photo: student.photo || '',
-                    status: currentShift,
+                    status: 'hadir',
                     metode: 'qr',
                     location: {
                         lat: currentLocation.lat,
@@ -958,8 +938,10 @@
                     timestamp: now.getTime()
                 };
                 
+                // Simpan ke JSONBin
                 const saved = await saveAttendance(newAttendance);
                 
+                // Simpan juga ke location records terpisah
                 await saveLocationRecord({
                     id: generateId(),
                     attendance_id: newAttendance.id,
@@ -971,41 +953,26 @@
                     accuracy: currentLocation.accuracy,
                     within_radius: locationValid,
                     distance: locationStatus.distance,
-                    shift: currentShift,
                     timestamp: now.getTime()
                 });
                 
                 if (saved) {
-                    const statusType = locationValid ? (currentShift === 'hadir' ? 'success' : 'pulang') : 'warning';
-                    const statusTitle = locationValid ? 
-                        (currentShift === 'hadir' ? '✅ Absen Pagi Berhasil!' : '🚶 Absen Pulang Berhasil!') : 
-                        '⚠️ Absen Tercatat (Luar Radius)';
-                    
-                    let message = currentShift === 'hadir' ? 
-                        `Selamat pagi, ${student.nama}` : 
-                        `Selamat sore, ${student.nama}`;
-                    
+                    let message = `Selamat datang, ${student.nama}`;
                     if (!locationValid) {
                         message = `Peringatan: Anda di luar radius sekolah (${locationStatus.distance}m)`;
                     }
                     
                     showStatus(
-                        statusType,
-                        statusTitle,
+                        locationValid ? 'success' : 'warning',
+                        locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absensi Tercatat (Luar Radius)',
                         message,
                         student,
                         nisFromQR,
                         currentLocation,
-                        locationStatus,
-                        currentShift
+                        locationStatus
                     );
                     
-                    showToast(
-                        locationValid ? 
-                            (currentShift === 'hadir' ? 'Absen pagi tercatat!' : 'Absen pulang tercatat!') : 
-                            'Absen tercatat (luar radius)', 
-                        locationValid ? (currentShift === 'hadir' ? 'success' : 'pulang') : 'warning'
-                    );
+                    showToast(locationValid ? 'Kehadiran tercatat!' : 'Absen tercatat (luar radius)', locationValid ? 'success' : 'warning');
                     
                     await loadAttendance();
                 } else {
@@ -1016,8 +983,7 @@
                         student,
                         nisFromQR,
                         currentLocation,
-                        locationStatus,
-                        currentShift
+                        locationStatus
                     );
                 }
                 
@@ -1030,9 +996,11 @@
             }
         }
 
-        function onScanError(error) {}
+        function onScanError(error) {
+            // Abaikan
+        }
 
-        function showStatus(type, title, message, student, nisFromQR, location, locationStatus, shift = 'hadir') {
+        function showStatus(type, title, message, student, nisFromQR, location, locationStatus) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -1043,7 +1011,6 @@
             card.className = 'status-card ' + type;
             
             if (type === 'success') icon.innerHTML = '✅';
-            else if (type === 'pulang') icon.innerHTML = '🚶';
             else if (type === 'error') icon.innerHTML = '❌';
             else if (type === 'warning') icon.innerHTML = '⚠️';
             
@@ -1056,11 +1023,6 @@
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
-                document.getElementById('detailStatus').innerHTML = `
-                    <span class="badge ${shift === 'hadir' ? 'badge-success' : 'badge-pulang'}">
-                        ${shift === 'hadir' ? 'HADIR (Pagi)' : 'PULANG (Sore)'}
-                    </span>
-                `;
                 
                 if (location) {
                     document.getElementById('detailLokasi').innerHTML = `
@@ -1071,6 +1033,7 @@
                         <span class="location-badge ${locationStatus.class}">${locationStatus.text}</span>
                     `;
                     
+                    // Tampilkan mini map
                     miniMap.classList.remove('hidden');
                     miniMap.innerHTML = `<iframe 
                         width="100%" 
@@ -1121,6 +1084,7 @@
                     document.getElementById('startBtn').style.display = 'none';
                     document.getElementById('stopBtn').style.display = 'block';
                     
+                    // Mulai tracking lokasi
                     startLocationTracking();
                 } catch (e) {
                     console.error('Start scanner error:', e);
@@ -1137,6 +1101,7 @@
                     document.getElementById('startBtn').style.display = 'block';
                     document.getElementById('stopBtn').style.display = 'none';
                     
+                    // Stop tracking lokasi
                     stopLocationTracking();
                     document.getElementById('locationStatus').classList.remove('visible');
                 } catch (e) {
@@ -1163,6 +1128,7 @@
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('stopBtn').style.display = 'block';
                 
+                // Mulai tracking lokasi
                 startLocationTracking();
                 
             } catch (error) {
@@ -1176,7 +1142,7 @@
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             toast.innerHTML = `
-                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'pulang' ? 'fa-sign-out-alt' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-xl"></i>
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-xl"></i>
                 <span>${message}</span>
             `;
             container.appendChild(toast);
@@ -1198,10 +1164,12 @@
                 return;
             }
             
+            // Cek izin kamera
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
                 
+                // Mulai scanner dan lokasi
                 startScanner();
             } catch (err) {
                 showToast('Izinkan akses kamera untuk memindai QR', 'error');
