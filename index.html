@@ -99,6 +99,7 @@
             text-align: center;
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
             display: none;
+            animation: fadeIn 0.2s ease-out;
         }
         
         .status-card.success {
@@ -114,6 +115,11 @@
         .status-card.warning {
             display: block;
             border-left: 4px solid #f59e0b;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
         .student-detail {
@@ -150,11 +156,12 @@
             border-radius: 30px;
             font-weight: 600;
             font-size: 16px;
-            transition: all 0.3s ease;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
             cursor: pointer;
             border: none;
             width: 100%;
             margin: 8px 0;
+            will-change: transform;
         }
         
         .btn-primary {
@@ -167,6 +174,10 @@
             box-shadow: 0 10px 25px -5px rgba(102, 126, 234, 0.5);
         }
         
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
         .btn-secondary {
             background: white;
             color: #4b5563;
@@ -175,6 +186,7 @@
         
         .btn-secondary:hover {
             background: #f9fafb;
+            transform: translateY(-2px);
         }
         
         .debug-btn {
@@ -197,7 +209,7 @@
             border-radius: 16px;
             color: white;
             z-index: 9999;
-            animation: slideUp 0.3s ease-out;
+            animation: slideUp 0.2s ease-out;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -226,8 +238,7 @@
             border-radius: 50%;
             width: 40px;
             height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 20px auto;
+            animation: spin 0.8s linear infinite;
         }
         
         @keyframes spin {
@@ -242,6 +253,7 @@
             border-radius: 16px;
             background: #f9fafb;
             padding: 12px;
+            -webkit-overflow-scrolling: touch;
         }
         
         .scan-item {
@@ -397,18 +409,28 @@
             BASE_URL: "https://api.jsonbin.io/v3/b"
         };
 
-        // STATE
+        // STATE & CACHE
         let html5QrcodeScanner = null;
         let isScanning = false;
         let students = [];
         let attendanceRecords = [];
         let todayScans = [];
         let isLoading = false;
+        
+        // Cache
+        let studentsCache = null;
+        let attendanceCache = null;
 
         // ==================== FUNGSI DATABASE ====================
         
         // Load data siswa dari JSONBin
-        async function loadStudents() {
+        async function loadStudents(useCache = true) {
+            if (useCache && studentsCache) {
+                students = studentsCache;
+                updateDebugPanel();
+                return students;
+            }
+            
             try {
                 showToast('Memuat data siswa...', 'info');
                 
@@ -423,11 +445,11 @@
                 
                 const data = await response.json();
                 students = Array.isArray(data) ? data : [];
+                studentsCache = students;
                 
                 console.log('📚 Loaded students:', students.length);
                 console.log('📋 Contoh data:', students[0]);
                 
-                // Update debug panel
                 updateDebugPanel();
                 
                 return students;
@@ -439,7 +461,13 @@
         }
 
         // Load data absensi dari JSONBin
-        async function loadAttendance() {
+        async function loadAttendance(useCache = true) {
+            if (useCache && attendanceCache) {
+                attendanceRecords = attendanceCache;
+                updateRecentScans();
+                return attendanceRecords;
+            }
+            
             try {
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}/latest`, {
                     headers: { 
@@ -452,9 +480,10 @@
                 
                 const data = await response.json();
                 attendanceRecords = Array.isArray(data) ? data : [];
+                attendanceCache = attendanceRecords;
+                
                 console.log('📋 Loaded attendance:', attendanceRecords.length);
                 
-                // Update recent scans (hari ini)
                 updateRecentScans();
                 
                 return attendanceRecords;
@@ -469,10 +498,8 @@
             try {
                 showToast('Menyimpan ke server...', 'info');
                 
-                // Tambahkan ke array lokal
                 attendanceRecords.push(newRecord);
                 
-                // Simpan ke JSONBin
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
                     method: 'PUT',
                     headers: {
@@ -486,8 +513,8 @@
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
                 console.log('✅ Absensi tersimpan:', newRecord);
+                attendanceCache = attendanceRecords;
                 
-                // Update tampilan recent scans
                 updateRecentScans();
                 
                 return true;
@@ -495,34 +522,30 @@
                 console.error('❌ Gagal simpan absensi:', error);
                 showToast('Gagal menyimpan ke server: ' + error.message, 'error');
                 
-                // Kembalikan array ke keadaan semula (rollback)
                 attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                 
                 return false;
             }
         }
 
-        // 🔍 **PERBAIKAN UTAMA: Fungsi pencarian siswa dengan FLEKSIBEL**
+        // 🔍 Fungsi pencarian siswa dengan FLEKSIBEL
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
                 return null;
             }
             
-            // Bersihkan NIS dari QR (hapus spasi, karakter aneh)
             const cleanNis = String(nisFromQR).trim();
             
             console.log('🔍 Mencari NIS:', cleanNis);
             console.log('📊 Total siswa:', students.length);
             
-            // Strategi 1: Exact match (langsung)
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) {
                 console.log('✅ Ditemukan (exact match):', student);
                 return student;
             }
             
-            // Strategi 2: Coba hapus leading zeros (misal: 001234 vs 1234)
             const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) {
@@ -530,8 +553,6 @@
                 return student;
             }
             
-            // Strategi 3: Cari sebagian (misal: QR 16 digit, DB hanya 7 digit terakhir)
-            // Ambil 7-10 digit terakhir (sesuaikan dengan format NIS di DB)
             const last7Digits = cleanNis.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
             if (student) {
@@ -546,7 +567,6 @@
                 return student;
             }
             
-            // Strategi 4: Cari dengan regex (angka saja)
             const numbersOnly = cleanNis.replace(/\D/g, '');
             student = students.find(s => String(s.nis).replace(/\D/g, '') === numbersOnly);
             if (student) {
@@ -554,18 +574,15 @@
                 return student;
             }
             
-            // Strategi 5: Jika semua gagal, tampilkan debug
             console.log('❌ Tidak ditemukan. Contoh NIS di DB:', students.slice(0, 3).map(s => s.nis));
             
             return null;
         }
 
-        // Generate ID unik (sama dengan di aplikasi admin)
         function generateId() {
             return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
         }
 
-        // Format tanggal Indonesia (YYYY-MM-DD)
         function formatDate(date) {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -573,7 +590,6 @@
             return `${year}-${month}-${day}`;
         }
 
-        // Format waktu
         function formatTime(date) {
             return date.toLocaleTimeString('id-ID', {
                 hour: '2-digit',
@@ -582,7 +598,6 @@
             });
         }
 
-        // Update recent scans (absensi hari ini)
         function updateRecentScans() {
             const today = formatDate(new Date());
             todayScans = attendanceRecords
@@ -622,7 +637,6 @@
             }).join('');
         }
 
-        // Update debug panel
         function updateDebugPanel() {
             const debugContent = document.getElementById('debugContent');
             if (!debugContent) return;
@@ -650,7 +664,6 @@
             debugContent.innerHTML = html;
         }
 
-        // Toggle debug panel
         function toggleDebug() {
             const panel = document.getElementById('debugPanel');
             const btn = document.getElementById('debugBtn');
@@ -667,7 +680,6 @@
 
         // ==================== FUNGSI SCANNER ====================
 
-        // Handle hasil scan QR
         async function onScanSuccess(decodedText) {
             if (isLoading) {
                 showToast('Sedang memproses scan sebelumnya...', 'warning');
@@ -675,20 +687,17 @@
             }
             
             isLoading = true;
-            stopScanner(); // Stop scanner sementara
+            stopScanner();
             
             try {
-                // decodedText = NIS siswa dari QR
                 const nisFromQR = decodedText.trim();
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
                 showToast('Memproses scan...', 'info');
                 
-                // Cari siswa di database dengan berbagai strategi
                 const student = findStudentByNIS(nisFromQR);
                 
                 if (!student) {
-                    // Siswa tidak ditemukan
                     showStatus(
                         'error', 
                         '❌ Siswa Tidak Ditemukan', 
@@ -698,7 +707,6 @@
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
                     
-                    // Tampilkan debug otomatis
                     setTimeout(() => {
                         if (document.getElementById('debugPanel').style.display === 'none') {
                             toggleDebug();
@@ -709,14 +717,12 @@
                     return;
                 }
                 
-                // Cek apakah sudah absen hari ini
                 const today = formatDate(new Date());
                 const alreadyAbsent = attendanceRecords.some(r => 
                     r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
                 );
                 
                 if (alreadyAbsent) {
-                    // Sudah absen hari ini
                     showStatus(
                         'warning', 
                         '⚠️ Sudah Absen Hari Ini', 
@@ -729,7 +735,6 @@
                     return;
                 }
                 
-                // Buat record absensi BARU
                 const now = new Date();
                 const newAttendance = {
                     id: generateId(),
@@ -746,11 +751,9 @@
                     timestamp: now.getTime()
                 };
                 
-                // Simpan ke JSONBin
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
-                    // Tampilkan sukses
                     showStatus(
                         'success', 
                         '✅ Absensi Berhasil!', 
@@ -760,8 +763,7 @@
                     );
                     showToast('Kehadiran tercatat!', 'success');
                     
-                    // Reload data dari server (untuk memastikan sync)
-                    await loadAttendance();
+                    await loadAttendance(false);
                 } else {
                     showStatus(
                         'error', 
@@ -782,11 +784,9 @@
         }
 
         function onScanError(error) {
-            // Abaikan error scanner (biasanya karena kamera masih mencari)
-            // console.log('Scan error:', error);
+            // Abaikan error scanner
         }
 
-        // Tampilkan status card setelah scan
         function showStatus(type, title, message, student, nisFromQR) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
@@ -794,10 +794,8 @@
             const messageEl = document.getElementById('statusMessage');
             const detailEl = document.getElementById('studentDetail');
             
-            // Reset classes
             card.className = 'status-card ' + type;
             
-            // Set icon
             if (type === 'success') icon.innerHTML = '✅';
             else if (type === 'error') icon.innerHTML = '❌';
             else if (type === 'warning') icon.innerHTML = '⚠️';
@@ -805,7 +803,6 @@
             titleEl.textContent = title;
             messageEl.textContent = message;
             
-            // Tampilkan/sembunyikan detail siswa
             if (student) {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = student.nis;
@@ -817,30 +814,25 @@
             } else {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 document.getElementById('detailNisDB').textContent = '-';
-                detailEl.style.display = 'block'; // Tetap tampilkan untuk debug
+                detailEl.style.display = 'block';
             }
             
-            // Sembunyikan scanner container
             document.querySelector('.scanner-container').style.display = 'none';
             document.getElementById('recentScans').style.display = 'none';
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
             document.getElementById('debugBtn').style.display = 'none';
             
-            // Tampilkan card
             card.style.display = 'block';
         }
 
         function resetScanner() {
-            // Tampilkan scanner container
             document.querySelector('.scanner-container').style.display = 'block';
             document.getElementById('recentScans').style.display = 'block';
             document.getElementById('debugBtn').style.display = 'block';
             
-            // Sembunyikan status card
             document.getElementById('statusCard').style.display = 'none';
             
-            // Mulai scanner lagi
             startScanner();
         }
 
@@ -919,17 +911,14 @@
         async function init() {
             showToast('Memuat data siswa...', 'info');
             
-            // Load data dari JSONBin
-            await loadStudents();
-            await loadAttendance();
+            await loadStudents(false);
+            await loadAttendance(false);
             
-            // Cek library
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
             }
             
-            // Cek izin kamera
             try {
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
@@ -940,7 +929,6 @@
             }
         }
 
-        // Auto-start
         window.onload = init;
     </script>
 </body>
