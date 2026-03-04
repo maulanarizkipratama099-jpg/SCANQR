@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title> ABSENSI QR | MAS IBNU HUSAIN </title>
+    <title>📱 ABSENSI QR - MAS IBNU HUSAIN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -193,18 +193,19 @@
             position: relative;
         }
 
-        .input-group i {
+        .input-group i:not(.password-toggle) {
             position: absolute;
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
             color: #9ca3af;
             font-size: 18px;
+            pointer-events: none;
         }
 
         .input-group input {
             width: 100%;
-            padding: 16px 16px 16px 50px;
+            padding: 16px 50px 16px 50px;
             border: 2px solid #e5e7eb;
             border-radius: 30px;
             font-size: 15px;
@@ -231,6 +232,10 @@
             cursor: pointer;
             color: #9ca3af;
             font-size: 18px;
+            z-index: 10;
+            padding: 8px;
+            background: transparent;
+            transition: all 0.2s ease;
         }
 
         .password-toggle:hover {
@@ -431,20 +436,18 @@
             box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.2);
             display: none;
             border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
         }
         
         .status-card.success {
-            display: block;
             border-left: 4px solid #10b981;
         }
         
         .status-card.error {
-            display: block;
             border-left: 4px solid #ef4444;
         }
         
         .status-card.warning {
-            display: block;
             border-left: 4px solid #f59e0b;
         }
 
@@ -676,6 +679,19 @@
             background: rgba(255, 255, 255, 0.3);
             transform: translateY(-2px);
         }
+
+        .auto-scan-indicator {
+            text-align: center;
+            font-size: 12px;
+            color: #4f46e5;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
@@ -749,6 +765,11 @@
         <!-- Scanner -->
         <div class="scanner-container">
             <div id="qr-reader"></div>
+        </div>
+        
+        <!-- Auto Scan Indicator -->
+        <div class="auto-scan-indicator" id="autoScanIndicator">
+            <i class="fas fa-sync-alt fa-spin mr-1"></i> Siap scan berikutnya...
         </div>
         
         <!-- Location Status -->
@@ -828,10 +849,6 @@
             </div>
             
             <div id="miniMap" class="map-mini hidden"></div>
-            
-            <button onclick="resetScanner()" class="btn btn-primary mt-4">
-                <i class="fas fa-redo-alt mr-2"></i>Scan Lagi
-            </button>
         </div>
         
         <!-- Recent Scans -->
@@ -897,6 +914,7 @@
         let currentLocation = null;
         let watchId = null;
         let configData = { school_logo: '' };
+        let autoResumeTimeout = null;
 
         // ==================== FUNGSI OPENING ====================
         async function loadOpeningLogo() {
@@ -979,6 +997,12 @@
         function handleLogout() {
             // Stop scanner jika sedang berjalan
             stopScanner();
+            
+            // Batalkan auto resume jika ada
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
             
             // Sembunyikan main container, tampilkan login
             document.getElementById('mainContainer').classList.remove('visible');
@@ -1351,7 +1375,15 @@
             }
             
             isLoading = true;
-            stopScanner();
+            
+            // Hentikan scanner sementara
+            if (html5QrcodeScanner && isScanning) {
+                try {
+                    await html5QrcodeScanner.pause();
+                } catch (e) {
+                    console.error('Pause scanner error:', e);
+                }
+            }
             
             try {
                 const nisFromQR = decodedText.trim();
@@ -1368,7 +1400,9 @@
                         nisFromQR
                     );
                     showToast('Aktifkan GPS terlebih dahulu', 'error');
-                    isLoading = false;
+                    
+                    // Resume scanner setelah 3 detik
+                    scheduleScannerResume();
                     return;
                 }
                 
@@ -1388,7 +1422,9 @@
                         locationStatus
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
-                    isLoading = false;
+                    
+                    // Resume scanner setelah 3 detik
+                    scheduleScannerResume();
                     return;
                 }
                 
@@ -1408,7 +1444,9 @@
                         locationStatus
                     );
                     showToast('Sudah absen hari ini', 'warning');
-                    isLoading = false;
+                    
+                    // Resume scanner setelah 3 detik
+                    scheduleScannerResume();
                     return;
                 }
                 
@@ -1481,12 +1519,53 @@
                     );
                 }
                 
+                // Resume scanner setelah 3 detik untuk scan berikutnya
+                scheduleScannerResume();
+                
             } catch (error) {
                 console.error('Error processing scan:', error);
                 showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
                 showToast('Error: ' + error.message, 'error');
+                
+                // Resume scanner setelah 3 detik
+                scheduleScannerResume();
             } finally {
                 isLoading = false;
+            }
+        }
+
+        function scheduleScannerResume() {
+            // Batalkan timeout sebelumnya jika ada
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+            }
+            
+            // Jadwalkan resume scanner setelah 3 detik
+            autoResumeTimeout = setTimeout(() => {
+                resumeScanner();
+                autoResumeTimeout = null;
+            }, 3000);
+        }
+
+        function resumeScanner() {
+            if (html5QrcodeScanner && document.getElementById('mainContainer').classList.contains('visible')) {
+                try {
+                    html5QrcodeScanner.resume();
+                    isScanning = true;
+                    
+                    // Sembunyikan status card
+                    document.getElementById('statusCard').style.display = 'none';
+                    
+                    // Tampilkan scanner
+                    document.querySelector('.scanner-container').style.display = 'block';
+                    document.getElementById('recentScans').style.display = 'block';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    showToast('Siap scan berikutnya', 'info');
+                } catch (e) {
+                    console.error('Resume scanner error:', e);
+                }
             }
         }
 
@@ -1559,15 +1638,6 @@
             card.style.display = 'block';
         }
 
-        function resetScanner() {
-            document.querySelector('.scanner-container').style.display = 'block';
-            document.getElementById('recentScans').style.display = 'block';
-            
-            document.getElementById('statusCard').style.display = 'none';
-            
-            startScanner();
-        }
-
         function startScanner() {
             if (!html5QrcodeScanner) {
                 initScanner();
@@ -1587,6 +1657,11 @@
         }
 
         function stopScanner() {
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
+            
             if (html5QrcodeScanner && isScanning) {
                 try {
                     html5QrcodeScanner.clear();
@@ -1690,4 +1765,3 @@
     </script>
 </body>
 </html>
-
