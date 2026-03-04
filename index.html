@@ -122,7 +122,152 @@
             80% { width: 90%; }
             100% { width: 100%; }
         }
-        
+
+        /* Login Container */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 40px 28px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            display: none;
+        }
+
+        .login-container.visible {
+            display: block;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header .logo-small {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .login-header .logo-small i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .login-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .login-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 18px;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 16px 16px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 18px;
+        }
+
+        .password-toggle:hover {
+            color: #4f46e5;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-login i {
+            margin-right: 8px;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
         .container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
@@ -133,6 +278,11 @@
             box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
             border: 1px solid rgba(255, 255, 255, 0.3);
             animation: fadeInUp 0.8s ease-out;
+            display: none;
+        }
+
+        .container.visible {
+            display: block;
         }
 
         @keyframes fadeInUp {
@@ -504,6 +654,28 @@
             background: linear-gradient(145deg, #4f46e5, #7c3aed);
             border-radius: 10px;
         }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
     </style>
 </head>
 <body>
@@ -523,7 +695,52 @@
         </div>
     </div>
 
-    <div class="container">
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-header">
+            <div class="logo-small">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h2>LOGIN ADMIN</h2>
+            <p>MAS IBNU HUSAIN</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Masukkan username" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Masukkan password" autocomplete="off">
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword()" id="togglePassword"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                MASUK
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <i class="fas fa-shield-alt mr-1"></i> Sistem Absensi QR Code
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainContainer" class="container">
+        <!-- Logout Button -->
+        <button onclick="handleLogout()" class="logout-btn">
+            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+        </button>
+
         <div class="header">
             <h1>📱 ABSENSI QR CODE</h1>
             <p>MAS IBNU HUSAIN</p>
@@ -707,8 +924,77 @@
                 document.getElementById('openingOverlay').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('openingOverlay').style.display = 'none';
+                    // Tampilkan login setelah opening
+                    document.getElementById('loginContainer').classList.add('visible');
                 }, 800);
             }, 2000);
+        }
+
+        // ==================== FUNGSI LOGIN ====================
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            // Validasi login (tidak ditampilkan di kolom)
+            if (username === 'admin' && password === 'admin123') {
+                showToast('Login berhasil!', 'success');
+                
+                // Sembunyikan login, tampilkan main container
+                document.getElementById('loginContainer').classList.remove('visible');
+                document.getElementById('mainContainer').classList.add('visible');
+                
+                // Reset form
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('password').type = 'password';
+                document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+                document.getElementById('togglePassword').classList.add('fa-eye');
+                
+                // Inisialisasi scanner
+                if (typeof Html5QrcodeScanner !== 'undefined') {
+                    checkCameraAndStart();
+                }
+            } else {
+                showToast('Username atau password salah!', 'error');
+            }
+        }
+
+        function handleLogout() {
+            // Stop scanner jika sedang berjalan
+            stopScanner();
+            
+            // Sembunyikan main container, tampilkan login
+            document.getElementById('mainContainer').classList.remove('visible');
+            document.getElementById('loginContainer').classList.add('visible');
+            
+            // Reset form
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('password').type = 'password';
+            document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+            document.getElementById('togglePassword').classList.add('fa-eye');
+            
+            // Sembunyikan location status
+            document.getElementById('locationStatus').classList.remove('visible');
+            
+            showToast('Berhasil logout', 'info');
         }
 
         // ==================== FUNGSI LOKASI ====================
@@ -1342,6 +1628,28 @@
             }
         }
 
+        async function checkCameraAndStart() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop());
+                
+                // Load data setelah login
+                document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
+                await loadStudents();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
+                await loadAttendance();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
+                await loadLocationRecords();
+                
+                startScanner();
+            } catch (err) {
+                showToast('Izinkan akses kamera untuk memindai QR', 'error');
+                console.error('Camera permission error:', err);
+            }
+        }
+
         function showToast(message, type = 'info') {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
@@ -1371,19 +1679,10 @@
             
             closeOpening();
             
+            // Cek library QR
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
-            }
-            
-            try {
-                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
-                stream.getTracks().forEach(track => track.stop());
-                
-                startScanner();
-            } catch (err) {
-                showToast('Izinkan akses kamera untuk memindai QR', 'error');
-                console.error('Camera permission error:', err);
             }
         }
 
@@ -1391,4 +1690,3 @@
     </script>
 </body>
 </html>
-
