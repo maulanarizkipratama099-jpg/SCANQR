@@ -843,7 +843,7 @@
             <p id="statusMessage" class="text-gray-600 text-sm mb-4"></p>
             
             <div class="countdown-timer" id="countdownTimer">
-                Kembali ke scanner dalam 10 detik
+                Kembali ke scanner dalam 5 detik
             </div>
             
             <div id="studentDetail" class="student-detail">
@@ -953,7 +953,7 @@
         let configData = { school_logo: '' };
         let autoResumeTimeout = null;
         let countdownInterval = null;
-        let countdownSeconds = 10;
+        let countdownSeconds = 5; // Diubah dari 10 menjadi 5
         let studentCache = new Map(); // Cache untuk pencarian siswa lebih cepat
 
         // ==================== FUNGSI OPENING ====================
@@ -1272,8 +1272,7 @@
 
         async function saveAttendance(newRecord) {
             try {
-                showToast('Menyimpan ke server...', 'info');
-                
+                // Langsung simpan tanpa toast "Menyimpan ke server" untuk mempercepat
                 attendanceRecords.push(newRecord);
                 
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
@@ -1439,8 +1438,6 @@
                 const nisFromQR = decodedText.trim();
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
-                showToast('Memproses scan...', 'info');
-                
                 if (!currentLocation) {
                     showStatus(
                         'error',
@@ -1522,9 +1519,11 @@
                     timestamp: now.getTime()
                 };
                 
+                // Simpan tanpa menunggu toast "Menyimpan ke server"
                 const saved = await saveAttendance(newAttendance);
                 
-                await saveLocationRecord({
+                // Simpan lokasi di background
+                saveLocationRecord({
                     id: generateId(),
                     attendance_id: newAttendance.id,
                     student_id: student.id,
@@ -1558,7 +1557,7 @@
                     
                     await loadAttendance();
                     
-                    // Mulai countdown 10 detik
+                    // Mulai countdown 5 detik
                     startCountdown();
                 } else {
                     showStatus(
@@ -1571,7 +1570,7 @@
                         locationStatus
                     );
                     
-                    // Mulai countdown 10 detik untuk error
+                    // Mulai countdown 5 detik untuk error
                     startCountdown();
                 }
                 
@@ -1580,7 +1579,7 @@
                 showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
                 showToast('Error: ' + error.message, 'error');
                 
-                // Mulai countdown 10 detik untuk error
+                // Mulai countdown 5 detik untuk error
                 startCountdown();
             } finally {
                 isLoading = false;
@@ -1588,7 +1587,7 @@
         }
 
         function startCountdown() {
-            countdownSeconds = 10;
+            countdownSeconds = 5; // Diubah dari 10 menjadi 5
             const timerEl = document.getElementById('countdownTimer');
             
             // Update timer setiap detik
@@ -1675,7 +1674,7 @@
             messageEl.textContent = message;
             
             // Reset timer display
-            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>10</strong> detik';
+            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>5</strong> detik';
             
             if (student) {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
