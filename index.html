@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
-    <title> ABSENSI QR | MAS IBNU HUSAIN</title>
+    <title>📱 ABSENSI QR - MAS IBNU HUSAIN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -452,10 +452,6 @@
         .status-card.warning {
             border-left: 4px solid #f59e0b;
         }
-        
-        .status-card.info {
-            border-left: 4px solid #3b82f6;
-        }
 
         .countdown-timer {
             font-size: 16px;
@@ -663,16 +659,6 @@
             background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
             color: #4f46e5;
         }
-
-        .badge-hadir {
-            background: linear-gradient(145deg, #10b981, #059669);
-            color: white;
-        }
-
-        .badge-pulang {
-            background: linear-gradient(145deg, #3b82f6, #2563eb);
-            color: white;
-        }
         
         .map-mini {
             width: 100%;
@@ -802,7 +788,7 @@
 
         <div class="header">
             <h1>📱 ABSENSI QR CODE</h1>
-            <p>MAS IBNU HUSAIN (Hadir & Pulang)</p>
+            <p>MAS IBNU HUSAIN</p>
         </div>
         
         <!-- Scanner -->
@@ -845,8 +831,8 @@
                 <span>Radius absensi: 100 meter dari sekolah</span>
             </div>
             <div class="info-item">
-                <i class="fas fa-clock"></i>
-                <span>Scan 2x: Absen Hadir (pagi) & Absen Pulang</span>
+                <i class="fas fa-sun"></i>
+                <span>Pastikan GPS dan kamera aktif</span>
             </div>
         </div>
         
@@ -882,10 +868,6 @@
                     <span class="value" id="detailJurusan">-</span>
                 </div>
                 <div class="student-detail-item">
-                    <span class="label">Jenis Absen</span>
-                    <span class="value" id="detailJenisAbsen">-</span>
-                </div>
-                <div class="student-detail-item">
                     <span class="label">Lokasi</span>
                     <span class="value" id="detailLokasi">-</span>
                 </div>
@@ -910,7 +892,7 @@
         <div id="recentScans" class="recent-scans">
             <div class="flex justify-between items-center mb-3">
                 <span class="text-sm font-bold text-gray-700">
-                    <i class="fas fa-history mr-2 text-indigo-600"></i>Scan Hari Ini
+                    <i class="fas fa-history mr-2 text-indigo-600"></i>Scan Terakhir
                 </span>
                 <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold" id="scanCount">0 hari ini</span>
             </div>
@@ -938,16 +920,15 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // KONFIGURASI JSONBIN
-        const JSONBIN_CONFIG = {
-            API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
-            BINS: {
-                STUDENTS: "699ffd15ae596e708f4b42a4",
-                ATTENDANCE: "69a57b3243b1c97be9abe8ac",
-                CONFIG: "69a748b1d0ea881f40ebb17c",
-                LOCATIONS: "69a51fe7ae596e708f56d415"
-            },
-            BASE_URL: "https://api.jsonbin.io/v3/b"
+        // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
+        // GANTI URL INI DENGAN URL WEB APP ANDA!
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwh8_GuMY3P5RLvFmv_5neQtNTx8iJbbLPnig2lQoZXVeMqORXEmnw-EsF4hMvm4yp8cA/exec';
+        
+        // Sheet names
+        const SHEETS = {
+            SISWA: 'siswa',
+            ABSENSI: 'absensi',
+            LOKASI: 'lokasi'
         };
 
         // KONSTANTA LOKASI SEKOLAH
@@ -974,21 +955,98 @@
         let countdownSeconds = 3;
         let studentCache = new Map();
 
+        // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
+
+        // GET data dari Google Sheets via Apps Script
+        async function fetchSheetData(sheetName) {
+            try {
+                const url = `${APPS_SCRIPT_URL}?action=getAll&sheet=${sheetName}&t=${Date.now()}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data || [];
+                } else {
+                    console.error(`Error fetching ${sheetName}:`, result.error);
+                    showToast(`Gagal memuat data ${sheetName}`, 'error');
+                    return [];
+                }
+            } catch (error) {
+                console.error(`Error fetching ${sheetName}:`, error);
+                showToast(`Gagal memuat data: ${error.message}`, 'error');
+                return [];
+            }
+        }
+
+        // POST data ke Google Sheets via Apps Script
+        async function postToSheet(action, sheetName, data, id = null) {
+            try {
+                const payload = {
+                    action: action,
+                    sheet: sheetName,
+                    data: data
+                };
+                
+                if (id) payload.id = id;
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log(`Data sent to ${sheetName} (${action})`);
+                return true;
+                
+            } catch (error) {
+                console.error(`Error posting to ${sheetName}:`, error);
+                showToast(`Gagal menyimpan data: ${error.message}`, 'error');
+                return false;
+            }
+        }
+
+        // GET config dari Google Sheets
+        async function fetchConfig() {
+            try {
+                const url = `${APPS_SCRIPT_URL}?action=getConfig&t=${Date.now()}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data || {};
+                } else {
+                    console.error('Error fetching config:', result.error);
+                    return {};
+                }
+            } catch (error) {
+                console.error('Error fetching config:', error);
+                return {};
+            }
+        }
+
         // ==================== FUNGSI OPENING ====================
         async function loadOpeningLogo() {
             try {
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.CONFIG}/latest`, {
-                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'X-Bin-Meta': 'false' }
-                });
-                if (response.ok) {
-                    const data = await response.json();
-                    configData = data;
-                    
-                    if (configData.school_logo) {
-                        document.getElementById('openingLogoImage').src = configData.school_logo;
-                        document.getElementById('openingLogoImage').classList.remove('hidden');
-                        document.getElementById('openingLogoIcon').classList.add('hidden');
-                    }
+                const config = await fetchConfig();
+                configData = config;
+                
+                if (configData.school_logo) {
+                    document.getElementById('openingLogoImage').src = configData.school_logo;
+                    document.getElementById('openingLogoImage').classList.remove('hidden');
+                    document.getElementById('openingLogoIcon').classList.add('hidden');
                 }
             } catch (error) {
                 console.error('Gagal load konfigurasi:', error);
@@ -1202,17 +1260,8 @@
         // ==================== FUNGSI DATABASE ====================
         async function loadStudents() {
             try {
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.STUDENTS}/latest`, {
-                    headers: { 
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-                students = Array.isArray(data) ? data : [];
+                const data = await fetchSheetData(SHEETS.SISWA);
+                students = data || [];
                 
                 studentCache.clear();
                 students.forEach(student => {
@@ -1232,17 +1281,8 @@
 
         async function loadAttendance() {
             try {
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}/latest`, {
-                    headers: { 
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
-                
-                const data = await response.json();
-                attendanceRecords = Array.isArray(data) ? data : [];
+                const data = await fetchSheetData(SHEETS.ABSENSI);
+                attendanceRecords = data || [];
                 console.log('📋 Loaded attendance:', attendanceRecords.length);
                 
                 updateRecentScans();
@@ -1256,19 +1296,8 @@
 
         async function loadLocationRecords() {
             try {
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.LOCATIONS}/latest`, {
-                    headers: { 
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'X-Bin-Meta': 'false'
-                    }
-                });
-                
-                if (response.ok) {
-                    const data = await response.json();
-                    locationRecords = Array.isArray(data) ? data : [];
-                } else {
-                    locationRecords = [];
-                }
+                const data = await fetchSheetData(SHEETS.LOKASI);
+                locationRecords = data || [];
                 
                 return locationRecords;
             } catch (error) {
@@ -1279,48 +1308,60 @@
 
         async function saveAttendance(newRecord) {
             try {
-                showToast('Menyimpan ke server...', 'info', 3000);
+                showToast('Menyimpan ke server...', 'info', 5000);
                 
-                attendanceRecords.push(newRecord);
+                // Append ke Google Sheets
+                const rowData = [
+                    newRecord.id || '',
+                    newRecord.student_id || '',
+                    newRecord.student_nis || '',
+                    newRecord.student_nama || '',
+                    newRecord.student_kelas || '',
+                    newRecord.student_jurusan || '',
+                    newRecord.student_photo || '',
+                    newRecord.status || '',
+                    newRecord.metode || '',
+                    newRecord.keterangan || '',
+                    newRecord.tanggal || '',
+                    newRecord.timestamp || '',
+                    JSON.stringify(newRecord.location) || ''
+                ];
                 
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'Content-Type': 'application/json',
-                        'X-Bin-Meta': 'false'
-                    },
-                    body: JSON.stringify(attendanceRecords)
-                });
+                const success = await postToSheet('append', SHEETS.ABSENSI, rowData);
                 
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                if (success) {
+                    attendanceRecords.push(newRecord);
+                    console.log('✅ Absensi tersimpan:', newRecord);
+                    updateRecentScans();
+                    return true;
+                } else {
+                    return false;
+                }
                 
-                console.log('✅ Absensi tersimpan:', newRecord);
-                updateRecentScans();
-                
-                return true;
             } catch (error) {
                 console.error('❌ Gagal simpan absensi:', error);
                 showToast('Gagal menyimpan ke server', 'error');
-                attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                 return false;
             }
         }
 
         async function saveLocationRecord(record) {
             try {
-                locationRecords.push(record);
+                const rowData = [
+                    record.id || '',
+                    record.attendance_id || '',
+                    record.student_id || '',
+                    record.student_nis || '',
+                    record.student_nama || '',
+                    record.lat || '',
+                    record.lng || '',
+                    record.accuracy || '',
+                    record.within_radius || false,
+                    record.distance || '',
+                    record.timestamp || ''
+                ];
                 
-                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.LOCATIONS}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(locationRecords)
-                });
-                
-                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                await postToSheet('append', SHEETS.LOKASI, rowData);
                 return true;
             } catch (error) {
                 console.error('❌ Gagal simpan lokasi:', error);
@@ -1392,9 +1433,7 @@
                 return;
             }
             
-            const hadirCount = attendanceRecords.filter(r => r.tanggal === today && r.status === 'hadir').length;
-            const pulangCount = attendanceRecords.filter(r => r.tanggal === today && r.status === 'pulang').length;
-            countEl.textContent = `${hadirCount} hadir, ${pulangCount} pulang`;
+            countEl.textContent = `${todayScans.length} hari ini`;
             
             listEl.innerHTML = todayScans.map(scan => {
                 const waktu = new Date(scan.timestamp).toLocaleTimeString('id-ID', {
@@ -1409,17 +1448,15 @@
                         <div>
                             <div class="font-bold text-sm">${scan.student_nama}</div>
                             <div class="text-xs text-gray-500">${scan.student_kelas}</div>
-                            <div class="flex gap-1 mt-1">
-                                <span class="badge ${scan.status === 'hadir' ? 'badge-hadir' : 'badge-pulang'}">${scan.status}</span>
-                                ${scan.location ? `
-                                    <span class="badge ${locationValid ? 'badge-success' : 'location-invalid'}">
-                                        <i class="fas fa-map-pin mr-1"></i>${locationValid ? 'Dalam' : 'Luar'}
-                                    </span>
-                                ` : ''}
-                            </div>
+                            ${scan.location ? `
+                                <div class="text-xs ${locationValid ? 'text-green-600' : 'text-red-600'} font-semibold mt-1">
+                                    <i class="fas fa-map-pin mr-1"></i>${locationValid ? 'Dalam radius' : 'Luar radius'}
+                                </div>
+                            ` : ''}
                         </div>
                         <div class="text-right">
                             <div class="text-xs font-bold">${waktu}</div>
+                            <span class="badge badge-success mt-1 inline-block">QR</span>
                         </div>
                     </div>
                 `;
@@ -1460,6 +1497,7 @@
                     showToast('Aktifkan GPS terlebih dahulu', 'error');
                     
                     scheduleScannerResume();
+                    isLoading = false;
                     return;
                 }
                 
@@ -1481,45 +1519,29 @@
                     showToast('Siswa tidak ditemukan!', 'error');
                     
                     startCountdown();
+                    isLoading = false;
                     return;
                 }
                 
                 const today = formatDate(new Date());
-                
-                // Cek apakah sudah ada absen hari ini
-                const attendanceToday = attendanceRecords.filter(r => 
-                    r.student_id === student.id && r.tanggal === today
+                const alreadyAbsent = attendanceRecords.some(r => 
+                    r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
                 );
                 
-                const sudahHadir = attendanceToday.some(r => r.status === 'hadir');
-                const sudahPulang = attendanceToday.some(r => r.status === 'pulang');
-                
-                let status, jenisAbsen, message;
-                
-                if (!sudahHadir) {
-                    // Belum absen sama sekali -> Hadir
-                    status = 'hadir';
-                    jenisAbsen = 'Absen Hadir (Pagi)';
-                    message = `Selamat pagi, ${student.nama}`;
-                } else if (sudahHadir && !sudahPulang) {
-                    // Sudah hadir, belum pulang -> Pulang
-                    status = 'pulang';
-                    jenisAbsen = 'Absen Pulang';
-                    message = `Selamat pulang, ${student.nama}`;
-                } else {
-                    // Sudah hadir dan pulang
+                if (alreadyAbsent) {
                     showStatus(
                         'warning', 
-                        '⚠️ Sudah Absen Lengkap Hari Ini', 
-                        `${student.nama} sudah melakukan absen hadir dan pulang hari ini.`, 
+                        '⚠️ Sudah Absen Hari Ini', 
+                        `${student.nama} sudah melakukan absensi hari ini.`, 
                         student,
                         nisFromQR,
                         currentLocation,
                         locationStatus
                     );
-                    showToast('Sudah absen lengkap hari ini', 'warning');
+                    showToast('Sudah absen hari ini', 'warning');
                     
                     startCountdown();
+                    isLoading = false;
                     return;
                 }
                 
@@ -1532,8 +1554,7 @@
                     student_kelas: student.kelas,
                     student_jurusan: student.jurusan,
                     student_photo: student.photo || '',
-                    status: status,
-                    jenis_absen: jenisAbsen,
+                    status: 'hadir',
                     metode: 'qr',
                     location: {
                         lat: currentLocation.lat,
@@ -1541,41 +1562,44 @@
                         accuracy: currentLocation.accuracy,
                         timestamp: currentLocation.timestamp
                     },
-                    keterangan: `${jenisAbsen} via QR. Jarak: ${locationStatus.distance}m dari sekolah. Akurasi: ±${Math.round(currentLocation.accuracy)}m`,
+                    keterangan: `Absen via QR. Jarak: ${locationStatus.distance}m dari sekolah. Akurasi: ±${Math.round(currentLocation.accuracy)}m`,
                     tanggal: formatDate(now),
                     timestamp: now.getTime()
                 };
                 
                 const saved = await saveAttendance(newAttendance);
                 
-                await saveLocationRecord({
-                    id: generateId(),
-                    attendance_id: newAttendance.id,
-                    student_id: student.id,
-                    student_nis: student.nis,
-                    student_nama: student.nama,
-                    lat: currentLocation.lat,
-                    lng: currentLocation.lng,
-                    accuracy: currentLocation.accuracy,
-                    within_radius: locationValid,
-                    distance: locationStatus.distance,
-                    status: status,
-                    timestamp: now.getTime()
-                });
-                
                 if (saved) {
+                    await saveLocationRecord({
+                        id: generateId(),
+                        attendance_id: newAttendance.id,
+                        student_id: student.id,
+                        student_nis: student.nis,
+                        student_nama: student.nama,
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy,
+                        within_radius: locationValid,
+                        distance: locationStatus.distance,
+                        timestamp: now.getTime()
+                    });
+                    
+                    let message = `Selamat datang, ${student.nama}`;
+                    if (!locationValid) {
+                        message = `Peringatan: Anda di luar radius sekolah (${locationStatus.distance}m)`;
+                    }
+                    
                     showStatus(
                         locationValid ? 'success' : 'warning',
-                        locationValid ? `✅ ${jenisAbsen} Berhasil!` : `⚠️ ${jenisAbsen} Tercatat (Luar Radius)`,
-                        message + (locationValid ? '' : ` (Luar radius ${locationStatus.distance}m)`),
+                        locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absensi Tercatat (Luar Radius)',
+                        message,
                         student,
                         nisFromQR,
                         currentLocation,
-                        locationStatus,
-                        jenisAbsen
+                        locationStatus
                     );
                     
-                    showToast(`${jenisAbsen} tercatat!`, locationValid ? 'success' : 'warning');
+                    showToast(locationValid ? 'Kehadiran tercatat!' : 'Absen tercatat (luar radius)', locationValid ? 'success' : 'warning');
                     
                     await loadAttendance();
                     
@@ -1666,7 +1690,7 @@
 
         function onScanError(error) {}
 
-        function showStatus(type, title, message, student, nisFromQR, location, locationStatus, jenisAbsen) {
+        function showStatus(type, title, message, student, nisFromQR, location, locationStatus) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -1680,8 +1704,7 @@
             const icons = {
                 success: '✅',
                 error: '❌',
-                warning: '⚠️',
-                info: 'ℹ️'
+                warning: '⚠️'
             };
             icon.innerHTML = icons[type] || '❓';
             
@@ -1696,7 +1719,6 @@
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
-                document.getElementById('detailJenisAbsen').textContent = jenisAbsen || (type === 'success' ? 'Absen Hadir' : '-');
                 
                 if (location) {
                     document.getElementById('detailLokasi').innerHTML = `
