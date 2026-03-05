@@ -305,7 +305,7 @@
         .header {
             text-align: center;
             margin-bottom: 24px;
-            padding-right: 70px; /* Memberi ruang untuk tombol logout */
+            padding-right: 70px;
         }
         
         .header h1 {
@@ -686,7 +686,7 @@
         .logout-btn {
             position: absolute;
             top: 20px;
-            right: 20px; /* Posisi di kanan atas */
+            right: 20px;
             background: rgba(255, 255, 255, 0.2);
             color: white;
             border: 1px solid rgba(255, 255, 255, 0.3);
@@ -781,7 +781,7 @@
 
     <!-- Main Container -->
     <div id="mainContainer" class="container">
-        <!-- Logout Button - Posisi fixed absolute di kanan atas -->
+        <!-- Logout Button -->
         <button onclick="handleLogout()" class="logout-btn">
             <i class="fas fa-sign-out-alt mr-1"></i> Logout
         </button>
@@ -843,7 +843,7 @@
             <p id="statusMessage" class="text-gray-600 text-sm mb-4"></p>
             
             <div class="countdown-timer" id="countdownTimer">
-                Kembali ke scanner dalam 5 detik
+                Kembali ke scanner dalam 3 detik
             </div>
             
             <div id="studentDetail" class="student-detail">
@@ -953,8 +953,8 @@
         let configData = { school_logo: '' };
         let autoResumeTimeout = null;
         let countdownInterval = null;
-        let countdownSeconds = 5; // Diubah dari 10 menjadi 5
-        let studentCache = new Map(); // Cache untuk pencarian siswa lebih cepat
+        let countdownSeconds = 3; // Diubah dari 10 menjadi 3
+        let studentCache = new Map();
 
         // ==================== FUNGSI OPENING ====================
         async function loadOpeningLogo() {
@@ -982,7 +982,6 @@
                 document.getElementById('openingOverlay').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('openingOverlay').style.display = 'none';
-                    // Tampilkan login setelah opening
                     document.getElementById('loginContainer').classList.add('visible');
                 }, 800);
             }, 2000);
@@ -1010,22 +1009,18 @@
             const username = document.getElementById('username').value;
             const password = document.getElementById('password').value;
             
-            // Validasi login (tidak ditampilkan di kolom)
             if (username === 'admin' && password === 'admin123') {
                 showToast('Login berhasil!', 'success');
                 
-                // Sembunyikan login, tampilkan main container
                 document.getElementById('loginContainer').classList.remove('visible');
                 document.getElementById('mainContainer').classList.add('visible');
                 
-                // Reset form
                 document.getElementById('username').value = '';
                 document.getElementById('password').value = '';
                 document.getElementById('password').type = 'password';
                 document.getElementById('togglePassword').classList.remove('fa-eye-slash');
                 document.getElementById('togglePassword').classList.add('fa-eye');
                 
-                // Inisialisasi scanner
                 if (typeof Html5QrcodeScanner !== 'undefined') {
                     checkCameraAndStart();
                 }
@@ -1035,10 +1030,8 @@
         }
 
         function handleLogout() {
-            // Stop scanner jika sedang berjalan
             stopScanner();
             
-            // Batalkan auto resume dan countdown jika ada
             if (autoResumeTimeout) {
                 clearTimeout(autoResumeTimeout);
                 autoResumeTimeout = null;
@@ -1048,18 +1041,15 @@
                 countdownInterval = null;
             }
             
-            // Sembunyikan main container, tampilkan login
             document.getElementById('mainContainer').classList.remove('visible');
             document.getElementById('loginContainer').classList.add('visible');
             
-            // Reset form
             document.getElementById('username').value = '';
             document.getElementById('password').value = '';
             document.getElementById('password').type = 'password';
             document.getElementById('togglePassword').classList.remove('fa-eye-slash');
             document.getElementById('togglePassword').classList.add('fa-eye');
             
-            // Sembunyikan location status
             document.getElementById('locationStatus').classList.remove('visible');
             
             showToast('Berhasil logout', 'info');
@@ -1206,7 +1196,6 @@
                 const data = await response.json();
                 students = Array.isArray(data) ? data : [];
                 
-                // Build cache untuk pencarian cepat
                 studentCache.clear();
                 students.forEach(student => {
                     const nis = String(student.nis).trim();
@@ -1272,7 +1261,8 @@
 
         async function saveAttendance(newRecord) {
             try {
-                // Langsung simpan tanpa toast "Menyimpan ke server" untuk mempercepat
+                showToast('Menyimpan ke server...', 'info', 5000); // Toast selama 5 detik
+                
                 attendanceRecords.push(newRecord);
                 
                 const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
@@ -1328,7 +1318,6 @@
             
             const cleanNis = String(nisFromQR).trim();
             
-            // Cek cache dulu untuk kecepatan
             if (studentCache.has(cleanNis)) {
                 return studentCache.get(cleanNis);
             }
@@ -1338,7 +1327,6 @@
                 return studentCache.get(withoutLeadingZeros);
             }
             
-            // Fallback ke pencarian manual jika tidak ada di cache
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) return student;
             
@@ -1425,7 +1413,6 @@
             
             isLoading = true;
             
-            // Hentikan scanner sementara
             if (html5QrcodeScanner && isScanning) {
                 try {
                     await html5QrcodeScanner.pause();
@@ -1438,6 +1425,8 @@
                 const nisFromQR = decodedText.trim();
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
+                showToast('Memproses scan...', 'info');
+                
                 if (!currentLocation) {
                     showStatus(
                         'error',
@@ -1448,7 +1437,6 @@
                     );
                     showToast('Aktifkan GPS terlebih dahulu', 'error');
                     
-                    // Resume scanner setelah 3 detik
                     scheduleScannerResume();
                     return;
                 }
@@ -1470,8 +1458,7 @@
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
                     
-                    // Resume scanner setelah 3 detik
-                    scheduleScannerResume();
+                    startCountdown(); // Mulai countdown 3 detik
                     return;
                 }
                 
@@ -1492,8 +1479,7 @@
                     );
                     showToast('Sudah absen hari ini', 'warning');
                     
-                    // Resume scanner setelah 3 detik
-                    scheduleScannerResume();
+                    startCountdown(); // Mulai countdown 3 detik
                     return;
                 }
                 
@@ -1519,11 +1505,9 @@
                     timestamp: now.getTime()
                 };
                 
-                // Simpan tanpa menunggu toast "Menyimpan ke server"
                 const saved = await saveAttendance(newAttendance);
                 
-                // Simpan lokasi di background
-                saveLocationRecord({
+                await saveLocationRecord({
                     id: generateId(),
                     attendance_id: newAttendance.id,
                     student_id: student.id,
@@ -1557,8 +1541,7 @@
                     
                     await loadAttendance();
                     
-                    // Mulai countdown 5 detik
-                    startCountdown();
+                    startCountdown(); // Mulai countdown 3 detik
                 } else {
                     showStatus(
                         'error', 
@@ -1570,8 +1553,7 @@
                         locationStatus
                     );
                     
-                    // Mulai countdown 5 detik untuk error
-                    startCountdown();
+                    startCountdown(); // Mulai countdown 3 detik
                 }
                 
             } catch (error) {
@@ -1579,18 +1561,16 @@
                 showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
                 showToast('Error: ' + error.message, 'error');
                 
-                // Mulai countdown 5 detik untuk error
-                startCountdown();
+                startCountdown(); // Mulai countdown 3 detik
             } finally {
                 isLoading = false;
             }
         }
 
         function startCountdown() {
-            countdownSeconds = 5; // Diubah dari 10 menjadi 5
+            countdownSeconds = 3; // Diubah dari 10 menjadi 3
             const timerEl = document.getElementById('countdownTimer');
             
-            // Update timer setiap detik
             if (countdownInterval) {
                 clearInterval(countdownInterval);
             }
@@ -1616,12 +1596,10 @@
         }
 
         function scheduleScannerResume() {
-            // Batalkan timeout sebelumnya jika ada
             if (autoResumeTimeout) {
                 clearTimeout(autoResumeTimeout);
             }
             
-            // Jadwalkan resume scanner setelah 3 detik
             autoResumeTimeout = setTimeout(() => {
                 resumeScanner();
                 autoResumeTimeout = null;
@@ -1634,10 +1612,8 @@
                     html5QrcodeScanner.resume();
                     isScanning = true;
                     
-                    // Sembunyikan status card
                     document.getElementById('statusCard').style.display = 'none';
                     
-                    // Tampilkan scanner
                     document.querySelector('.scanner-container').style.display = 'block';
                     document.getElementById('recentScans').style.display = 'block';
                     document.getElementById('startBtn').style.display = 'none';
@@ -1673,8 +1649,7 @@
             titleEl.textContent = title;
             messageEl.textContent = message;
             
-            // Reset timer display
-            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>5</strong> detik';
+            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>3</strong> detik';
             
             if (student) {
                 document.getElementById('detailNisQR').textContent = nisFromQR || '-';
@@ -1797,7 +1772,6 @@
                 const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
                 stream.getTracks().forEach(track => track.stop());
                 
-                // Load data setelah login
                 document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
                 await loadStudents();
                 
@@ -1814,7 +1788,7 @@
             }
         }
 
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
@@ -1826,7 +1800,7 @@
             
             setTimeout(() => {
                 toast.remove();
-            }, 3000);
+            }, duration);
         }
 
         async function init() {
@@ -1843,7 +1817,6 @@
             
             closeOpening();
             
-            // Cek library QR
             if (typeof Html5QrcodeScanner === 'undefined') {
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
