@@ -920,15 +920,16 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
-        // GANTI URL INI DENGAN URL WEB APP ANDA!
-        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyrQouNBOsJPSDP0Mo0G8r91DCOn7viODEt9mMfxUv0B6dqMPAj1w-Kx8Q7cte5qUqhYw/exec';
-        
-        // Sheet names
-        const SHEETS = {
-            SISWA: 'siswa',
-            ABSENSI: 'absensi',
-            LOKASI: 'lokasi'
+        // KONFIGURASI JSONBIN
+        const JSONBIN_CONFIG = {
+            API_KEY: "$2a$10$uIB7UH1hUV6kFv7v4l21puJBjd.1.r9SYqT8XT94RkJyHCyzGQQFm",
+            BINS: {
+                STUDENTS: "699ffd15ae596e708f4b42a4",
+                ATTENDANCE: "69a57b3243b1c97be9abe8ac",
+                CONFIG: "69a748b1d0ea881f40ebb17c",
+                LOCATIONS: "69a51fe7ae596e708f56d415"
+            },
+            BASE_URL: "https://api.jsonbin.io/v3/b"
         };
 
         // KONSTANTA LOKASI SEKOLAH
@@ -952,101 +953,24 @@
         let configData = { school_logo: '' };
         let autoResumeTimeout = null;
         let countdownInterval = null;
-        let countdownSeconds = 3;
+        let countdownSeconds = 3; // Diubah dari 10 menjadi 3
         let studentCache = new Map();
-
-        // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
-
-        // GET data dari Google Sheets via Apps Script
-        async function fetchSheetData(sheetName) {
-            try {
-                const url = `${APPS_SCRIPT_URL}?action=getAll&sheet=${sheetName}&t=${Date.now()}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.data || [];
-                } else {
-                    console.error(`Error fetching ${sheetName}:`, result.error);
-                    showToast(`Gagal memuat data ${sheetName}`, 'error');
-                    return [];
-                }
-            } catch (error) {
-                console.error(`Error fetching ${sheetName}:`, error);
-                showToast(`Gagal memuat data: ${error.message}`, 'error');
-                return [];
-            }
-        }
-
-        // POST data ke Google Sheets via Apps Script
-        async function postToSheet(action, sheetName, data, id = null) {
-            try {
-                const payload = {
-                    action: action,
-                    sheet: sheetName,
-                    data: data
-                };
-                
-                if (id) payload.id = id;
-                
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'no-cors',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(payload)
-                });
-                
-                console.log(`Data sent to ${sheetName} (${action})`);
-                return true;
-                
-            } catch (error) {
-                console.error(`Error posting to ${sheetName}:`, error);
-                showToast(`Gagal menyimpan data: ${error.message}`, 'error');
-                return false;
-            }
-        }
-
-        // GET config dari Google Sheets
-        async function fetchConfig() {
-            try {
-                const url = `${APPS_SCRIPT_URL}?action=getConfig&t=${Date.now()}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.data || {};
-                } else {
-                    console.error('Error fetching config:', result.error);
-                    return {};
-                }
-            } catch (error) {
-                console.error('Error fetching config:', error);
-                return {};
-            }
-        }
 
         // ==================== FUNGSI OPENING ====================
         async function loadOpeningLogo() {
             try {
-                const config = await fetchConfig();
-                configData = config;
-                
-                if (configData.school_logo) {
-                    document.getElementById('openingLogoImage').src = configData.school_logo;
-                    document.getElementById('openingLogoImage').classList.remove('hidden');
-                    document.getElementById('openingLogoIcon').classList.add('hidden');
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.CONFIG}/latest`, {
+                    headers: { 'X-Master-Key': JSONBIN_CONFIG.API_KEY, 'X-Bin-Meta': 'false' }
+                });
+                if (response.ok) {
+                    const data = await response.json();
+                    configData = data;
+                    
+                    if (configData.school_logo) {
+                        document.getElementById('openingLogoImage').src = configData.school_logo;
+                        document.getElementById('openingLogoImage').classList.remove('hidden');
+                        document.getElementById('openingLogoIcon').classList.add('hidden');
+                    }
                 }
             } catch (error) {
                 console.error('Gagal load konfigurasi:', error);
@@ -1260,8 +1184,17 @@
         // ==================== FUNGSI DATABASE ====================
         async function loadStudents() {
             try {
-                const data = await fetchSheetData(SHEETS.SISWA);
-                students = data || [];
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.STUDENTS}/latest`, {
+                    headers: { 
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                students = Array.isArray(data) ? data : [];
                 
                 studentCache.clear();
                 students.forEach(student => {
@@ -1281,8 +1214,17 @@
 
         async function loadAttendance() {
             try {
-                const data = await fetchSheetData(SHEETS.ABSENSI);
-                attendanceRecords = data || [];
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}/latest`, {
+                    headers: { 
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                
+                const data = await response.json();
+                attendanceRecords = Array.isArray(data) ? data : [];
                 console.log('📋 Loaded attendance:', attendanceRecords.length);
                 
                 updateRecentScans();
@@ -1296,8 +1238,19 @@
 
         async function loadLocationRecords() {
             try {
-                const data = await fetchSheetData(SHEETS.LOKASI);
-                locationRecords = data || [];
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.LOCATIONS}/latest`, {
+                    headers: { 
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'X-Bin-Meta': 'false'
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    locationRecords = Array.isArray(data) ? data : [];
+                } else {
+                    locationRecords = [];
+                }
                 
                 return locationRecords;
             } catch (error) {
@@ -1308,60 +1261,48 @@
 
         async function saveAttendance(newRecord) {
             try {
-                showToast('Menyimpan ke server...', 'info', 5000);
+                showToast('Menyimpan ke server...', 'info', 5000); // Toast selama 5 detik
                 
-                // Append ke Google Sheets
-                const rowData = [
-                    newRecord.id || '',
-                    newRecord.student_id || '',
-                    newRecord.student_nis || '',
-                    newRecord.student_nama || '',
-                    newRecord.student_kelas || '',
-                    newRecord.student_jurusan || '',
-                    newRecord.student_photo || '',
-                    newRecord.status || '',
-                    newRecord.metode || '',
-                    newRecord.keterangan || '',
-                    newRecord.tanggal || '',
-                    newRecord.timestamp || '',
-                    JSON.stringify(newRecord.location) || ''
-                ];
+                attendanceRecords.push(newRecord);
                 
-                const success = await postToSheet('append', SHEETS.ABSENSI, rowData);
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.ATTENDANCE}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'Content-Type': 'application/json',
+                        'X-Bin-Meta': 'false'
+                    },
+                    body: JSON.stringify(attendanceRecords)
+                });
                 
-                if (success) {
-                    attendanceRecords.push(newRecord);
-                    console.log('✅ Absensi tersimpan:', newRecord);
-                    updateRecentScans();
-                    return true;
-                } else {
-                    return false;
-                }
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 
+                console.log('✅ Absensi tersimpan:', newRecord);
+                updateRecentScans();
+                
+                return true;
             } catch (error) {
                 console.error('❌ Gagal simpan absensi:', error);
                 showToast('Gagal menyimpan ke server', 'error');
+                attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                 return false;
             }
         }
 
         async function saveLocationRecord(record) {
             try {
-                const rowData = [
-                    record.id || '',
-                    record.attendance_id || '',
-                    record.student_id || '',
-                    record.student_nis || '',
-                    record.student_nama || '',
-                    record.lat || '',
-                    record.lng || '',
-                    record.accuracy || '',
-                    record.within_radius || false,
-                    record.distance || '',
-                    record.timestamp || ''
-                ];
+                locationRecords.push(record);
                 
-                await postToSheet('append', SHEETS.LOKASI, rowData);
+                const response = await fetch(`${JSONBIN_CONFIG.BASE_URL}/${JSONBIN_CONFIG.BINS.LOCATIONS}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.API_KEY,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(locationRecords)
+                });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return true;
             } catch (error) {
                 console.error('❌ Gagal simpan lokasi:', error);
@@ -1497,7 +1438,6 @@
                     showToast('Aktifkan GPS terlebih dahulu', 'error');
                     
                     scheduleScannerResume();
-                    isLoading = false;
                     return;
                 }
                 
@@ -1518,8 +1458,7 @@
                     );
                     showToast('Siswa tidak ditemukan!', 'error');
                     
-                    startCountdown();
-                    isLoading = false;
+                    startCountdown(); // Mulai countdown 3 detik
                     return;
                 }
                 
@@ -1540,8 +1479,7 @@
                     );
                     showToast('Sudah absen hari ini', 'warning');
                     
-                    startCountdown();
-                    isLoading = false;
+                    startCountdown(); // Mulai countdown 3 detik
                     return;
                 }
                 
@@ -1569,21 +1507,21 @@
                 
                 const saved = await saveAttendance(newAttendance);
                 
+                await saveLocationRecord({
+                    id: generateId(),
+                    attendance_id: newAttendance.id,
+                    student_id: student.id,
+                    student_nis: student.nis,
+                    student_nama: student.nama,
+                    lat: currentLocation.lat,
+                    lng: currentLocation.lng,
+                    accuracy: currentLocation.accuracy,
+                    within_radius: locationValid,
+                    distance: locationStatus.distance,
+                    timestamp: now.getTime()
+                });
+                
                 if (saved) {
-                    await saveLocationRecord({
-                        id: generateId(),
-                        attendance_id: newAttendance.id,
-                        student_id: student.id,
-                        student_nis: student.nis,
-                        student_nama: student.nama,
-                        lat: currentLocation.lat,
-                        lng: currentLocation.lng,
-                        accuracy: currentLocation.accuracy,
-                        within_radius: locationValid,
-                        distance: locationStatus.distance,
-                        timestamp: now.getTime()
-                    });
-                    
                     let message = `Selamat datang, ${student.nama}`;
                     if (!locationValid) {
                         message = `Peringatan: Anda di luar radius sekolah (${locationStatus.distance}m)`;
@@ -1603,7 +1541,7 @@
                     
                     await loadAttendance();
                     
-                    startCountdown();
+                    startCountdown(); // Mulai countdown 3 detik
                 } else {
                     showStatus(
                         'error', 
@@ -1615,7 +1553,7 @@
                         locationStatus
                     );
                     
-                    startCountdown();
+                    startCountdown(); // Mulai countdown 3 detik
                 }
                 
             } catch (error) {
@@ -1623,14 +1561,14 @@
                 showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
                 showToast('Error: ' + error.message, 'error');
                 
-                startCountdown();
+                startCountdown(); // Mulai countdown 3 detik
             } finally {
                 isLoading = false;
             }
         }
 
         function startCountdown() {
-            countdownSeconds = 3;
+            countdownSeconds = 3; // Diubah dari 10 menjadi 3
             const timerEl = document.getElementById('countdownTimer');
             
             if (countdownInterval) {
