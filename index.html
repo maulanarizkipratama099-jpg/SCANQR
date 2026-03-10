@@ -1,39 +1,29 @@
-<!doctype html>
-<html lang="id" class="h-full">
+<!DOCTYPE html>
+<html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>📱 Scan QR | MAS IBNU HUSAIN</title>
-    
-    <!-- Optimasi loading -->
-    <link rel="preconnect" href="https://cdn.tailwindcss.com">
-    <link rel="preconnect" href="https://cdnjs.cloudflare.com">
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://maps.googleapis.com">
-    
-    <!-- Load CSS -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes">
+    <title>📱 ABSENSI QR - MAS IBNU HUSAIN</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@200;300;400;500;600;700;800&display=swap" rel="stylesheet">
-    
-    <!-- Load library -->
-    <script src="https://unpkg.com/html5-qrcode@2.3.8/minified/html5-qrcode.min.js"></script>
-    
     <!-- Google Maps API -->
-    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places" defer></script>
-    
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
         }
-
+        
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
             background: linear-gradient(145deg, #0B1120 0%, #1A1F35 50%, #2D1B4A 100%);
             min-height: 100vh;
-            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
         }
 
         /* Opening Animation */
@@ -68,11 +58,18 @@
             backdrop-filter: blur(10px);
             border: 3px solid rgba(255, 255, 255, 0.2);
             border-radius: 50%;
-            margin: 0 auto 20px;
+            margin: 0 auto 30px;
             display: flex;
             align-items: center;
             justify-content: center;
             overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1); }
+            50% { box-shadow: 0 30px 60px rgba(79, 70, 229, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3); }
         }
 
         .logo-circle img {
@@ -82,32 +79,39 @@
         }
 
         .logo-circle i {
-            font-size: 60px;
+            font-size: 70px;
             color: rgba(255, 255, 255, 0.5);
         }
 
         .opening-title {
-            font-size: 24px;
+            font-size: 28px;
             font-weight: 800;
             background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+        }
+
+        .opening-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 30px;
         }
 
         .progress-bar {
-            width: 250px;
+            width: 280px;
             height: 4px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 10px;
             overflow: hidden;
-            margin: 15px auto;
+            margin: 20px auto;
         }
 
         .progress-fill {
             width: 0%;
             height: 100%;
             background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+            border-radius: 10px;
             animation: loading 2s ease-in-out forwards;
         }
 
@@ -119,172 +123,465 @@
             100% { width: 100%; }
         }
 
-        /* Glass Effect */
-        .glass-card {
+        /* Login Container */
+        .login-container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-            transition: all 0.3s ease;
-        }
-
-        /* Scanner Container */
-        .scanner-container {
+            border-radius: 40px;
+            padding: 40px 28px;
             width: 100%;
-            max-width: 500px;
-            margin: 0 auto;
-            border-radius: 30px;
-            overflow: hidden;
-            background: rgba(0, 0, 0, 0.3);
-            position: relative;
+            max-width: 400px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            display: none;
         }
 
-        #qr-reader {
-            width: 100% !important;
-            border: none !important;
-            border-radius: 30px !important;
-            background: transparent !important;
+        .login-container.visible {
+            display: block;
         }
 
-        #qr-reader__scan_region {
-            background: transparent !important;
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
         }
 
-        #qr-reader video {
-            border-radius: 30px !important;
-            object-fit: cover !important;
-        }
-
-        #qr-reader__dashboard_section {
-            padding: 0 !important;
-        }
-
-        #qr-reader__dashboard_section_csr span {
-            color: white !important;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed) !important;
-            border: none !important;
-            border-radius: 50px !important;
-            padding: 12px 24px !important;
-            font-family: 'Plus Jakarta Sans', sans-serif !important;
-            font-weight: 600 !important;
-            cursor: pointer !important;
-        }
-
-        #qr-reader__dashboard_section_csr span:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4) !important;
-        }
-
-        /* Status Badges */
-        .status-badge {
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-        }
-
-        .status-badge.hadir { background: linear-gradient(145deg, #10b981, #059669); color: white; }
-        .status-badge.pulang { background: linear-gradient(145deg, #3b82f6, #2563eb); color: white; }
-        .status-badge.izin { background: linear-gradient(145deg, #f59e0b, #d97706); color: white; }
-        .status-badge.sakit { background: linear-gradient(145deg, #ef4444, #dc2626); color: white; }
-        .status-badge.absen { background: linear-gradient(145deg, #6b7280, #4b5563); color: white; }
-
-        /* Location Badge */
-        .location-badge {
-            padding: 4px 12px;
-            border-radius: 30px;
-            font-size: 11px;
-            font-weight: 600;
-            background: #d1fae5;
-            color: #059669;
-            display: inline-block;
-        }
-
-        .location-badge.outside {
-            background: #fee2e2;
-            color: #dc2626;
-        }
-
-        /* Loading Spinner */
-        .loading-spinner {
-            width: 40px;
-            height: 40px;
-            border: 3px solid rgba(255, 255, 255, 0.1);
-            border-top: 3px solid #4f46e5;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        /* Student Photo */
-        .student-photo {
+        .login-header .logo-small {
             width: 80px;
             height: 80px;
-            border-radius: 50%;
-            object-fit: cover;
-            border: 3px solid #4f46e5;
-        }
-
-        .student-photo-placeholder {
-            width: 80px;
-            height: 80px;
-            border-radius: 50%;
-            background: #e2e8f0;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            border-radius: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: #94a3b8;
-            font-size: 30px;
-            border: 3px dashed #cbd5e1;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
         }
 
-        /* Alert */
-        .alert {
+        .login-header .logo-small i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .login-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .login-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i:not(.password-toggle) {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 50px 16px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 18px;
+            z-index: 10;
+            padding: 8px;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #4f46e5;
+        }
+
+        .btn-login {
+            width: 100%;
             padding: 16px;
-            border-radius: 20px;
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+            margin-top: 10px;
         }
 
-        .alert-success { background: #d1fae5; border-left: 4px solid #10b981; }
-        .alert-error { background: #fee2e2; border-left: 4px solid #ef4444; }
-        .alert-warning { background: #fef3c7; border-left: 4px solid #f59e0b; }
-        .alert-info { background: #dbeafe; border-left: 4px solid #3b82f6; }
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
+        }
 
-        /* Toast */
+        .btn-login i {
+            margin-right: 8px;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 28px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            display: none;
+            position: relative;
+        }
+
+        .container.visible {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-right: 70px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .scanner-container {
+            background: #1f2937;
+            border-radius: 32px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            border: 2px solid rgba(79, 70, 229, 0.3);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #qr-reader {
+            width: 100%;
+            border: none !important;
+        }
+        
+        #qr-reader video {
+            border-radius: 32px !important;
+        }
+        
+        .info-box {
+            background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            color: #1e293b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .info-item i {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4f46e5;
+            font-size: 14px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        
+        .location-status {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: none;
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .location-status.visible {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .location-coord {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 30px;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .location-badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .location-valid {
+            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
+            color: #059669;
+            border: 1px solid #05966933;
+        }
+        
+        .location-invalid {
+            background: linear-gradient(145deg, #fee2e2, #fecaca);
+            color: #dc2626;
+            border: 1px solid #dc262633;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.2);
+            display: none;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .status-card.success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .status-card.error {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .status-card.warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .countdown-timer {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4f46e5;
+            background: #e0e7ff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        #statusIcon {
+            width: 70px;
+            height: 70px;
+            border-radius: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 36px;
+            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-detail {
+            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .student-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #d1d5db;
+        }
+        
+        .student-detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .label {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .value {
+            font-weight: 700;
+            color: #111827;
+            font-size: 13px;
+        }
+        
+        .btn {
+            padding: 16px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin: 8px 0;
+            letter-spacing: 0.3px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #4b5563;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #4f46e5;
+        }
+        
+        .btn-skip {
+            background: white;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+            margin-top: 10px;
+        }
+        
+        .btn-skip:hover {
+            background: #4f46e5;
+            color: white;
+        }
+        
         .toast {
             position: fixed;
             bottom: 30px;
-            left: 20px;
-            right: 20px;
+            right: 30px;
+            left: 30px;
             max-width: 400px;
             margin: 0 auto;
-            padding: 16px 20px;
+            padding: 18px 25px;
             border-radius: 50px;
             color: white;
             z-index: 9999;
             animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            font-weight: 600;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 15px;
             box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
         }
-
-        .toast-success { background: linear-gradient(145deg, #10b981, #059669); }
-        .toast-error { background: linear-gradient(145deg, #ef4444, #dc2626); }
-        .toast-info { background: linear-gradient(145deg, #3b82f6, #2563eb); }
-        .toast-warning { background: linear-gradient(145deg, #f59e0b, #d97706); }
-
+        
+        .toast.success { background: linear-gradient(145deg, #10b981, #059669); }
+        .toast.error { background: linear-gradient(145deg, #ef4444, #dc2626); }
+        .toast.info { background: linear-gradient(145deg, #3b82f6, #2563eb); }
+        .toast.warning { background: linear-gradient(145deg, #f59e0b, #d97706); }
+        
         @keyframes slideUp {
             from {
                 transform: translateY(100%) scale(0.8);
@@ -295,11 +592,134 @@
                 opacity: 1;
             }
         }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-right: 4px solid #7c3aed;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .recent-scans {
+            margin-top: 24px;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .scan-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .scan-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .scan-time {
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .badge-success {
+            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+        }
+        
+        .badge-location {
+            background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
+            color: #4f46e5;
+        }
+        
+        .map-mini {
+            width: 100%;
+            height: 150px;
+            border-radius: 20px;
+            margin-top: 12px;
+            border: 2px solid #4f46e5;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+        }
 
-        /* Responsive */
-        @media (max-width: 640px) {
-            .glass-card { padding: 20px; }
-            .student-photo { width: 60px; height: 60px; }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            border-radius: 10px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .auto-scan-indicator {
+            text-align: center;
+            font-size: 12px;
+            color: #4f46e5;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
     </style>
 </head>
@@ -311,212 +731,281 @@
                 <img id="openingLogoImage" src="" alt="Logo" class="hidden">
                 <i id="openingLogoIcon" class="fas fa-qrcode"></i>
             </div>
-            <h1 class="opening-title">ABSENSI QR CODE</h1>
-            <p class="text-white/60 text-sm mb-3">MAS IBNU HUSAIN</p>
+            <h1 class="opening-title">SCAN QR ABSENSI</h1>
+            <p class="opening-subtitle">MAS IBNU HUSAIN</p>
             <div class="progress-bar">
                 <div class="progress-fill"></div>
             </div>
-            <p class="text-white/40 text-xs mt-3" id="openingStatus">Menyiapkan scanner...</p>
+            <p class="text-white/40 text-sm mt-4" id="openingStatus">Menyiapkan scanner...</p>
         </div>
     </div>
 
-    <!-- Main App -->
-    <div id="mainApp" class="hidden min-h-full p-4 md:p-6">
-        <!-- Header -->
-        <div class="max-w-3xl mx-auto mb-4">
-            <div class="glass-card rounded-3xl p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-12 h-12 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 rounded-xl flex items-center justify-center overflow-hidden">
-                            <img id="logoImage" src="" alt="Logo" class="w-full h-full object-cover hidden">
-                            <span id="logoDefault" class="text-white font-bold text-xl">📱</span>
-                        </div>
-                        <div>
-                            <h1 class="text-lg font-bold text-gray-800" id="schoolName">MAS IBNU HUSAIN</h1>
-                            <p class="text-xs text-gray-500">Scan QR untuk Absen</p>
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <button onclick="toggleMode()" id="modeToggle" class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold">
-                            <i class="fas fa-exchange-alt mr-1"></i>Mode: <span id="modeText">Hadir</span>
-                        </button>
-                    </div>
-                </div>
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-header">
+            <div class="logo-small">
+                <i class="fas fa-user-shield"></i>
             </div>
+            <h2>LOGIN ADMIN</h2>
+            <p>MAS IBNU HUSAIN</p>
         </div>
 
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Masukkan username" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Masukkan password" autocomplete="off">
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword()" id="togglePassword"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                MASUK
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <i class="fas fa-shield-alt mr-1"></i> Sistem Absensi QR Code
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div id="mainContainer" class="container">
+        <!-- Logout Button -->
+        <button onclick="handleLogout()" class="logout-btn">
+            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+        </button>
+
+        <div class="header">
+            <h1>📱 ABSENSI QR CODE</h1>
+            <p>MAS IBNU HUSAIN</p>
+        </div>
+        
+        <!-- Scanner -->
+        <div class="scanner-container">
+            <div id="qr-reader"></div>
+        </div>
+        
+        <!-- Auto Scan Indicator -->
+        <div class="auto-scan-indicator" id="autoScanIndicator">
+            <i class="fas fa-sync-alt fa-spin mr-1"></i> Siap scan berikutnya...
+        </div>
+        
         <!-- Location Status -->
-        <div class="max-w-3xl mx-auto mb-4">
-            <div class="glass-card rounded-2xl p-4">
-                <div class="flex items-center justify-between">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                            <i class="fas fa-map-marker-alt text-indigo-600"></i>
-                        </div>
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Lokasi Anda</p>
-                            <p id="locationStatus" class="text-xs text-gray-500">Mendeteksi lokasi...</p>
-                        </div>
-                    </div>
-                    <div id="locationBadge" class="px-3 py-1 bg-gray-200 text-gray-700 rounded-full text-xs font-semibold">
-                        <i class="fas fa-circle-notch fa-spin mr-1"></i>Loading
-                    </div>
+        <div id="locationStatus" class="location-status">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                    <i class="fas fa-map-marker-alt text-blue-600"></i>
+                </div>
+                <div>
+                    <span class="font-semibold text-gray-800" id="locationText">Mendapatkan lokasi...</span>
+                    <p class="text-xs text-gray-500">Pastikan GPS aktif</p>
+                </div>
+            </div>
+            <div class="location-coord" id="locationCoord"></div>
+            <div class="mt-2" id="locationValidity"></div>
+        </div>
+        
+        <!-- Info Box -->
+        <div class="info-box">
+            <div class="info-item">
+                <i class="fas fa-qrcode"></i>
+                <span>Arahkan kamera ke QR Code siswa</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-map-pin"></i>
+                <span>Lokasi Anda akan dicatat untuk verifikasi</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-school"></i>
+                <span>Radius absensi: 100 meter dari sekolah</span>
+            </div>
+            <div class="info-item">
+                <i class="fas fa-sun"></i>
+                <span>Pastikan GPS dan kamera aktif</span>
+            </div>
+        </div>
+        
+        <!-- Status Card (ditampilkan setelah scan) -->
+        <div id="statusCard" class="status-card">
+            <div id="statusIcon">✅</div>
+            <h3 id="statusTitle" class="text-xl font-bold mb-2 text-gray-800">Berhasil!</h3>
+            <p id="statusMessage" class="text-gray-600 text-sm mb-4"></p>
+            
+            <div class="countdown-timer" id="countdownTimer">
+                Kembali ke scanner dalam 3 detik
+            </div>
+            
+            <div id="studentDetail" class="student-detail">
+                <div class="student-detail-item">
+                    <span class="label">ID Siswa</span>
+                    <span class="value" id="detailId">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">NIS (QR)</span>
+                    <span class="value" id="detailNisQR">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">NIS (DB)</span>
+                    <span class="value" id="detailNisDB">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Nama</span>
+                    <span class="value" id="detailNama">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Kelas</span>
+                    <span class="value" id="detailKelas">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Jurusan</span>
+                    <span class="value" id="detailJurusan">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Created At</span>
+                    <span class="value" id="detailCreatedAt">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Lokasi</span>
+                    <span class="value" id="detailLokasi">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Status Lokasi</span>
+                    <span class="value" id="detailLokasiStatus">-</span>
+                </div>
+                <div class="student-detail-item">
+                    <span class="label">Waktu</span>
+                    <span class="value" id="detailWaktu">-</span>
+                </div>
+            </div>
+            
+            <div id="miniMap" class="map-mini hidden"></div>
+            
+            <button onclick="skipCountdown()" class="btn btn-skip">
+                <i class="fas fa-forward mr-2"></i>Lanjutkan Sekarang
+            </button>
+        </div>
+        
+        <!-- Recent Scans -->
+        <div id="recentScans" class="recent-scans">
+            <div class="flex justify-between items-center mb-3">
+                <span class="text-sm font-bold text-gray-700">
+                    <i class="fas fa-history mr-2 text-indigo-600"></i>Scan Terakhir
+                </span>
+                <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold" id="scanCount">0 hari ini</span>
+            </div>
+            <div id="recentList">
+                <div class="text-center text-gray-400 text-sm py-4">
+                    <i class="fas fa-camera text-3xl mb-2 opacity-50"></i>
+                    <p>Belum ada scan</p>
                 </div>
             </div>
         </div>
-
-        <!-- Scanner Card -->
-        <div class="max-w-3xl mx-auto">
-            <div class="glass-card rounded-3xl p-4 md:p-6">
-                <h2 class="text-xl font-bold mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent flex items-center">
-                    <i class="fas fa-camera mr-2"></i>
-                    Scan QR Code Siswa
-                </h2>
-                
-                <div class="scanner-container">
-                    <div id="qr-reader" style="width: 100%;"></div>
-                </div>
-                
-                <div class="mt-4 text-center">
-                    <p class="text-xs text-gray-500">
-                        <i class="fas fa-info-circle mr-1"></i>
-                        Arahkan kamera ke QR Code siswa untuk absen
-                    </p>
-                </div>
-            </div>
-        </div>
-
-        <!-- Result Card (Hidden by default) -->
-        <div id="resultCard" class="max-w-3xl mx-auto mt-4 hidden">
-            <div class="glass-card rounded-3xl p-6">
-                <h3 class="text-lg font-bold mb-4 flex items-center">
-                    <i class="fas fa-check-circle text-green-500 mr-2"></i>
-                    <span>Hasil Scan</span>
-                </h3>
-                
-                <div class="flex items-center gap-4 mb-6">
-                    <div id="resultPhoto" class="student-photo-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
-                    <div>
-                        <h4 class="font-bold text-lg" id="resultNama">-</h4>
-                        <p class="text-sm text-gray-600" id="resultNIS">-</p>
-                        <p class="text-sm text-gray-600" id="resultKelas">-</p>
-                    </div>
-                </div>
-                
-                <div class="grid grid-cols-2 gap-3 mb-4">
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-500">Status Hari Ini</p>
-                        <p id="resultStatusHadir" class="font-semibold text-gray-700">Belum Hadir</p>
-                    </div>
-                    <div class="bg-gray-50 rounded-xl p-3">
-                        <p class="text-xs text-gray-500">Status Pulang</p>
-                        <p id="resultStatusPulang" class="font-semibold text-gray-700">Belum Pulang</p>
-                    </div>
-                </div>
-                
-                <div class="flex gap-3">
-                    <button onclick="confirmAbsen()" id="confirmBtn" class="flex-1 py-4 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-semibold hover:shadow-xl transition-all">
-                        <i class="fas fa-check-circle mr-2"></i>Konfirmasi <span id="confirmMode">Hadir</span>
-                    </button>
-                    <button onclick="cancelScan()" class="px-6 py-4 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-xl font-semibold hover:shadow-xl transition-all">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <!-- Info Card -->
-        <div class="max-w-3xl mx-auto mt-4">
-            <div class="glass-card rounded-2xl p-4">
-                <div class="flex items-start gap-3">
-                    <i class="fas fa-info-circle text-indigo-600 mt-1"></i>
-                    <div class="text-xs text-gray-600">
-                        <p class="font-semibold mb-1">Informasi Absensi:</p>
-                        <p>• Scan pertama hari ini = <strong class="text-green-600">Absen Hadir</strong></p>
-                        <p>• Scan kedua hari ini = <strong class="text-blue-600">Absen Pulang</strong></p>
-                        <p>• Lokasi harus dalam radius 100m dari sekolah</p>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
+        <!-- Control Buttons -->
+        <button onclick="startScanner()" id="startBtn" class="btn btn-primary">
+            <i class="fas fa-camera mr-2"></i>Mulai Kamera
+        </button>
+        
+        <button onclick="stopScanner()" id="stopBtn" class="btn btn-secondary" style="display: none;">
+            <i class="fas fa-stop mr-2"></i>Stop Kamera
+        </button>
     </div>
-
-    <!-- Loading Overlay -->
-    <div id="loadingOverlay" class="hidden fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-        <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 text-center max-w-sm border border-white/20">
-            <div class="loading-spinner mx-auto mb-4"></div>
-            <p id="loadingMessage" class="text-white font-medium text-lg">Memproses...</p>
-        </div>
-    </div>
-
+    
     <!-- Toast Container -->
     <div id="toastContainer"></div>
 
+    <!-- Load Library -->
+    <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // ==================== KONFIGURASI ====================
+        // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
+        // Gunakan URL yang SAMA dengan aplikasi siswa
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
-        
-        // Cache data
-        let students = [];
-        let attendanceRecords = [];
-        let configData = {
-            school_logo: '',
-            school_name: 'MAS IBNU HUSAIN',
-            school_lat: -7.230636,
-            school_lng: 112.749601,
-            school_radius: 100
+
+        // Sheet names - SAMA dengan aplikasi siswa
+        const SHEET_NAMES = {
+            STUDENTS: "STUDENTS",
+            ATTENDANCE: "ATTENDANCE",
+            LOCATIONS: "LOCATIONS",
+            CONFIG: "CONFIG"
         };
 
-        // State
-        let currentMode = 'hadir'; // 'hadir' atau 'pulang'
-        let scannedStudent = null;
-        let currentLocation = null;
-        let html5QrCode = null;
-        let isScanning = false;
+        // KONSTANTA LOKASI SEKOLAH
+        const SCHOOL_LOCATION = {
+            lat: -7.230636,
+            lng: 112.749601,
+            radius: 100,
+            address: "Jl. Irawati 1 No. 15-17, Surabaya"
+        };
 
-        // ==================== FUNGSI LOAD DATA ====================
+        // STATE
+        let html5QrcodeScanner = null;
+        let isScanning = false;
+        let students = [];
+        let attendanceRecords = [];
+        let locationRecords = [];
+        let todayScans = [];
+        let isLoading = false;
+        let currentLocation = null;
+        let watchId = null;
+        let configData = { school_logo: '' };
+        let autoResumeTimeout = null;
+        let countdownInterval = null;
+        let countdownSeconds = 3;
+        let studentCache = new Map();
+
+        // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
         async function fetchSheetData(sheetName) {
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
                 window[callbackName] = function(response) {
-                    cleanup();
+                    console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                    
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    delete window[callbackName];
+                    clearTimeout(timeout);
+                    
                     if (response && response.success) {
                         resolve(response.data || []);
                     } else {
-                        const cached = localStorage.getItem(`backup_${sheetName}`);
-                        if (cached) {
-                            resolve(JSON.parse(cached));
-                        } else {
-                            resolve([]);
-                        }
+                        resolve([]);
                     }
                 };
 
                 const timeout = setTimeout(() => {
-                    cleanup();
-                    const cached = localStorage.getItem(`backup_${sheetName}`);
-                    resolve(cached ? JSON.parse(cached) : []);
-                }, 10000);
-
-                function cleanup() {
-                    delete window[callbackName];
-                    clearTimeout(timeout);
+                    console.log(`⏱️ Timeout fetch ${sheetName}`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
-                }
+                    resolve([]);
+                }, 10000);
 
                 const actionMap = {
-                    'CONFIG': 'getConfig',
                     'STUDENTS': 'getStudents',
-                    'ATTENDANCE': 'getAttendance'
+                    'ATTENDANCE': 'getAttendance',
+                    'LOCATIONS': 'getLocations',
+                    'CONFIG': 'getConfig'
                 };
 
                 const action = actionMap[sheetName];
                 if (!action) {
-                    cleanup();
+                    clearTimeout(timeout);
+                    delete window[callbackName];
                     resolve([]);
                     return;
                 }
@@ -524,389 +1013,51 @@
                 const script = document.createElement('script');
                 script.id = callbackName;
                 script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
+                
                 script.onerror = () => {
-                    cleanup();
-                    const cached = localStorage.getItem(`backup_${sheetName}`);
-                    resolve(cached ? JSON.parse(cached) : []);
-                };
-                document.body.appendChild(script);
-            });
-        }
-
-        function arrayToObjects(rows) {
-            if (!rows || rows.length < 2) return [];
-            const headers = rows[0];
-            const data = [];
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
-                const obj = {};
-                headers.forEach((header, index) => {
-                    if (header && header.trim()) {
-                        let value = row[index] || '';
-                        if (header === 'created_at' || header === 'timestamp') {
-                            if (value && !isNaN(value)) value = parseInt(value);
-                        } else if (header === 'lat' || header === 'lng' || header === 'accuracy') {
-                            if (value && !isNaN(value)) value = parseFloat(value);
-                        }
-                        obj[header.trim()] = value;
+                    console.error(`❌ Script error fetch ${sheetName}`);
+                    clearTimeout(timeout);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
                     }
-                });
-                data.push(obj);
-            }
-            return data;
-        }
+                    script.remove();
+                    resolve([]);
+                };
 
-        async function loadAllData() {
-            try {
-                const [configRows, studentsRows, attendanceRows] = await Promise.all([
-                    fetchSheetData('CONFIG'),
-                    fetchSheetData('STUDENTS'),
-                    fetchSheetData('ATTENDANCE')
-                ]);
-
-                // Process CONFIG
-                if (configRows && typeof configRows === 'object') {
-                    configData = { ...configData, ...configRows };
-                }
-
-                // Process STUDENTS
-                if (studentsRows && studentsRows.length > 1) {
-                    students = arrayToObjects(studentsRows);
-                }
-
-                // Process ATTENDANCE
-                if (attendanceRows && attendanceRows.length > 1) {
-                    attendanceRecords = arrayToObjects(attendanceRows).map(record => {
-                        if (record.location_lat && record.location_lng) {
-                            record.location = {
-                                lat: parseFloat(record.location_lat),
-                                lng: parseFloat(record.location_lng),
-                                accuracy: parseFloat(record.location_accuracy || 0)
-                            };
-                            delete record.location_lat;
-                            delete record.location_lng;
-                            delete record.location_accuracy;
-                        }
-                        return record;
-                    });
-                }
-
-                applyConfig();
-                console.log('✅ Data loaded:', { 
-                    students: students.length, 
-                    attendance: attendanceRecords.length 
-                });
-
-            } catch (error) {
-                console.error('Error loading data:', error);
-            }
-        }
-
-        function applyConfig() {
-            if (configData.school_logo) {
-                document.getElementById('logoImage').src = configData.school_logo;
-                document.getElementById('logoImage').classList.remove('hidden');
-                document.getElementById('logoDefault').classList.add('hidden');
-                
-                document.getElementById('openingLogoImage').src = configData.school_logo;
-                document.getElementById('openingLogoImage').classList.remove('hidden');
-                document.getElementById('openingLogoIcon').classList.add('hidden');
-            }
-            document.getElementById('schoolName').textContent = configData.school_name || 'MAS IBNU HUSAIN';
-            
-            // Parse koordinat
-            configData.school_lat = parseFloat(configData.school_lat) || -7.230636;
-            configData.school_lng = parseFloat(configData.school_lng) || 112.749601;
-            configData.school_radius = parseInt(configData.school_radius) || 100;
-        }
-
-        // ==================== GOOGLE DRIVE FUNCTIONS ====================
-        function extractGoogleDriveFileId(url) {
-            if (!url) return null;
-            const patterns = [
-                /\/file\/d\/([^\/?#]+)/,
-                /\/open\?id=([^&?#]+)/,
-                /\/uc\?id=([^&?#]+)/,
-                /\/d\/([^\/?#]+)/,
-                /id=([^&?#]+)/
-            ];
-            for (let pattern of patterns) {
-                const match = url.match(pattern);
-                if (match && match[1]) return match[1];
-            }
-            return null;
-        }
-
-        function getGoogleDriveThumbnail(fileId) {
-            return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
-        }
-
-        function convertGoogleDriveLink(link) {
-            if (!link) return '';
-            const fileId = extractGoogleDriveFileId(link);
-            if (!fileId) return link;
-            return getGoogleDriveThumbnail(fileId);
-        }
-
-        // ==================== QR SCANNER ====================
-        function startScanner() {
-            if (isScanning) return;
-            
-            const qrReaderElement = document.getElementById('qr-reader');
-            if (!qrReaderElement) return;
-
-            html5QrCode = new Html5Qrcode("qr-reader");
-            
-            const config = {
-                fps: 10,
-                qrbox: { width: 250, height: 250 },
-                aspectRatio: 1.0
-            };
-
-            html5QrCode.start(
-                { facingMode: "environment" },
-                config,
-                onScanSuccess,
-                onScanError
-            ).then(() => {
-                isScanning = true;
-                console.log('QR Scanner started');
-            }).catch((err) => {
-                console.error('Failed to start scanner:', err);
-                showToast('Gagal memulai kamera', 'error');
+                document.body.appendChild(script);
+                console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
             });
         }
 
-        function onScanSuccess(decodedText) {
-            if (!scannedStudent) {
-                processQRCode(decodedText);
-            }
-        }
-
-        function onScanError(errorMessage) {
-            // Silent error
-        }
-
-        function stopScanner() {
-            if (html5QrCode && isScanning) {
-                html5QrCode.stop().then(() => {
-                    isScanning = false;
-                    console.log('QR Scanner stopped');
-                }).catch(err => {
-                    console.error('Failed to stop scanner:', err);
-                });
-            }
-        }
-
-        // ==================== PROCESS QR ====================
-        function processQRCode(nis) {
-            const student = students.find(s => String(s.nis) === String(nis).trim());
-            
-            if (!student) {
-                showToast('QR Code tidak valid', 'error');
-                return;
-            }
-
-            if (!currentLocation) {
-                showToast('Lokasi belum terdeteksi', 'error');
-                return;
-            }
-
-            // Cek jarak
-            const distance = calculateDistance(
-                currentLocation.lat, 
-                currentLocation.lng, 
-                configData.school_lat, 
-                configData.school_lng
-            );
-
-            const withinRadius = distance <= configData.school_radius;
-
-            if (!withinRadius) {
-                showToast(`Anda berada di luar radius sekolah (${Math.round(distance)}m)`, 'error');
-                return;
-            }
-
-            // Stop scanner
-            stopScanner();
-            
-            // Set scanned student
-            scannedStudent = student;
-            
-            // Display result
-            displayScanResult(student, withinRadius, distance);
-        }
-
-        function displayScanResult(student, withinRadius, distance) {
-            // Photo
-            const photoContainer = document.getElementById('resultPhoto');
-            if (student.photo) {
-                const photoUrl = convertGoogleDriveLink(student.photo);
-                photoContainer.innerHTML = `<img src="${photoUrl}" class="student-photo" onerror="this.onerror=null; this.parentElement.innerHTML='<div class=\\'student-photo-placeholder\\'><i class=\\'fas fa-user\\'></i></div>';">`;
-            } else {
-                photoContainer.innerHTML = '<div class="student-photo-placeholder"><i class="fas fa-user"></i></div>';
-            }
-
-            // Info
-            document.getElementById('resultNama').textContent = student.nama || '-';
-            document.getElementById('resultNIS').textContent = `NIS: ${student.nis || '-'}`;
-            document.getElementById('resultKelas').textContent = `${student.kelas || '-'} - ${student.jurusan || '-'}`;
-
-            // Check today's status
-            const today = new Date().toISOString().split('T')[0];
-            const todayAttendances = attendanceRecords.filter(r => 
-                r.student_id === student.id && r.tanggal === today
-            );
-
-            const hasHadir = todayAttendances.some(r => r.status === 'hadir');
-            const hasPulang = todayAttendances.some(r => r.status === 'pulang');
-
-            document.getElementById('resultStatusHadir').innerHTML = hasHadir ? 
-                '<span class="status-badge hadir text-xs">✅ SUDAH HADIR</span>' : 
-                '<span class="text-gray-500">Belum Hadir</span>';
-            
-            document.getElementById('resultStatusPulang').innerHTML = hasPulang ? 
-                '<span class="status-badge pulang text-xs">🏠 SUDAH PULANG</span>' : 
-                '<span class="text-gray-500">Belum Pulang</span>';
-
-            // Determine available mode
-            if (currentMode === 'hadir' && hasHadir) {
-                document.getElementById('confirmMode').textContent = 'Pulang';
-            } else if (currentMode === 'pulang' && hasPulang) {
-                document.getElementById('confirmMode').textContent = 'Hadir';
-            } else {
-                document.getElementById('confirmMode').textContent = currentMode === 'hadir' ? 'Hadir' : 'Pulang';
-            }
-
-            // Show result card
-            document.getElementById('resultCard').classList.remove('hidden');
-        }
-
-        // ==================== ABSEN CONFIRMATION ====================
-        async function confirmAbsen() {
-            if (!scannedStudent || !currentLocation) {
-                showToast('Data tidak lengkap', 'error');
-                return;
-            }
-
-            const today = new Date().toISOString().split('T')[0];
-            const todayAttendances = attendanceRecords.filter(r => 
-                r.student_id === scannedStudent.id && r.tanggal === today
-            );
-
-            const hasHadir = todayAttendances.some(r => r.status === 'hadir');
-            const hasPulang = todayAttendances.some(r => r.status === 'pulang');
-
-            let targetMode = currentMode;
-
-            // Auto-switch mode if needed
-            if (targetMode === 'hadir' && hasHadir && !hasPulang) {
-                targetMode = 'pulang';
-            } else if (targetMode === 'pulang' && hasPulang && !hasHadir) {
-                targetMode = 'hadir';
-            } else if (targetMode === 'hadir' && hasHadir && hasPulang) {
-                showToast('Siswa sudah absen hadir dan pulang hari ini', 'error');
-                cancelScan();
-                return;
-            } else if (targetMode === 'pulang' && hasHadir && hasPulang) {
-                showToast('Siswa sudah absen hadir dan pulang hari ini', 'error');
-                cancelScan();
-                return;
-            } else if (targetMode === 'hadir' && !hasHadir) {
-                // OK
-            } else if (targetMode === 'pulang' && !hasHadir) {
-                showToast('Siswa belum absen hadir hari ini', 'error');
-                cancelScan();
-                return;
-            }
-
-            showLoading(`Memproses absen ${targetMode}...`);
-
-            // Create attendance record
-            const newAttendance = {
-                id: generateId(),
-                student_id: scannedStudent.id,
-                student_nis: scannedStudent.nis,
-                student_nama: scannedStudent.nama,
-                student_kelas: scannedStudent.kelas,
-                student_jurusan: scannedStudent.jurusan,
-                student_photo: scannedStudent.photo || '',
-                status: targetMode,
-                metode: 'qr',
-                location: currentLocation,
-                keterangan: '',
-                tanggal: today,
-                timestamp: Date.now()
-            };
-
-            // Add to records
-            attendanceRecords.push(newAttendance);
-
-            // Save to server
-            const success = await saveAttendance();
-
-            hideLoading();
-
-            if (success) {
-                showToast(`Absen ${targetMode} berhasil untuk ${scannedStudent.nama}`, 'success');
-                
-                // Update display
-                const hasHadirNow = attendanceRecords.some(r => 
-                    r.student_id === scannedStudent.id && r.tanggal === today && r.status === 'hadir'
-                );
-                const hasPulangNow = attendanceRecords.some(r => 
-                    r.student_id === scannedStudent.id && r.tanggal === today && r.status === 'pulang'
-                );
-
-                document.getElementById('resultStatusHadir').innerHTML = hasHadirNow ? 
-                    '<span class="status-badge hadir text-xs">✅ SUDAH HADIR</span>' : 
-                    '<span class="text-gray-500">Belum Hadir</span>';
-                
-                document.getElementById('resultStatusPulang').innerHTML = hasPulangNow ? 
-                    '<span class="status-badge pulang text-xs">🏠 SUDAH PULANG</span>' : 
-                    '<span class="text-gray-500">Belum Pulang</span>';
-
-                // Auto close after 3 seconds
-                setTimeout(() => {
-                    cancelScan();
-                }, 3000);
-            } else {
-                showToast('Gagal menyimpan absensi', 'error');
-            }
-        }
-
-        function generateId() {
-            return 'ABS' + Date.now().toString().slice(-8) + Math.random().toString(36).substr(2, 4).toUpperCase();
-        }
-
-        async function saveAttendance() {
+        async function saveAttendance(newRecord) {
             try {
-                const recordsForSheet = attendanceRecords.map(record => ({
-                    ...record,
-                    location_lat: record.location?.lat || '',
-                    location_lng: record.location?.lng || '',
-                    location_accuracy: record.location?.accuracy || ''
-                }));
-
-                const headers = ['id', 'student_id', 'student_nis', 'student_nama', 'student_kelas', 'student_jurusan', 'student_photo', 'status', 'metode', 'location_lat', 'location_lng', 'location_accuracy', 'keterangan', 'tanggal', 'timestamp'];
-                const rows = [headers];
+                showToast('Menyimpan ke server...', 'info', 5000);
                 
-                recordsForSheet.forEach(record => {
-                    const row = headers.map(header => record[header] || '');
-                    rows.push(row);
-                });
-
+                attendanceRecords.push(newRecord);
+                
+                // Kirim via JSONP
                 return new Promise((resolve) => {
                     const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                     
                     window[callbackName] = function(response) {
                         cleanup();
-                        resolve(response && response.success);
+                        console.log(`📥 Response dari Apps Script untuk ATTENDANCE:`, response);
+                        
+                        if (response && response.success) {
+                            console.log(`✅ ATTENDANCE saved to Google Sheets`);
+                            updateRecentScans();
+                            resolve(true);
+                        } else {
+                            console.error(`❌ Gagal simpan ATTENDANCE:`, response?.error);
+                            attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
+                            resolve(false);
+                        }
                     };
 
                     const timeout = setTimeout(() => {
                         cleanup();
+                        console.log(`⏱️ Timeout update ATTENDANCE`);
+                        attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                         resolve(false);
                     }, 15000);
 
@@ -917,9 +1068,30 @@
                         if (script) script.remove();
                     }
 
+                    // Konversi ke format array untuk sheet
+                    const values = [
+                        [
+                            newRecord.id,
+                            newRecord.student_id,
+                            newRecord.student_nis,
+                            newRecord.student_nama,
+                            newRecord.student_kelas,
+                            newRecord.student_jurusan,
+                            newRecord.student_photo,
+                            newRecord.status,
+                            newRecord.metode,
+                            newRecord.location?.lat || '',
+                            newRecord.location?.lng || '',
+                            newRecord.location?.accuracy || '',
+                            newRecord.keterangan || '',
+                            newRecord.tanggal,
+                            newRecord.timestamp
+                        ]
+                    ];
+
                     const formData = new FormData();
                     formData.append('action', 'saveAttendance');
-                    formData.append('data', JSON.stringify(rows));
+                    formData.append('data', JSON.stringify(values));
                     formData.append('callback', callbackName);
 
                     fetch(APPS_SCRIPT_URL, {
@@ -928,72 +1100,295 @@
                         body: formData
                     })
                     .then(response => response.text())
-                    .then(text => {
-                        eval(text);
-                    })
+                    .then(text => eval(text))
                     .catch(error => {
-                        console.error('Fetch error:', error);
+                        console.error(`❌ Fetch error for ATTENDANCE:`, error);
                         cleanup();
+                        attendanceRecords = attendanceRecords.filter(r => r.id !== newRecord.id);
                         resolve(false);
                     });
-                });
 
+                    console.log(`📤 Mengirim POST request ke Apps Script untuk ATTENDANCE`);
+                });
+                
             } catch (error) {
-                console.error('Error saving attendance:', error);
+                console.error('❌ Gagal simpan absensi:', error);
+                showToast('Gagal menyimpan ke server', 'error');
                 return false;
             }
         }
 
-        // ==================== LOCATION FUNCTIONS ====================
-        function getLocation() {
-            if (!navigator.geolocation) {
-                document.getElementById('locationStatus').textContent = 'Geolocation tidak didukung';
-                return;
+        async function saveLocationRecord(record) {
+            try {
+                locationRecords.push(record);
+                
+                const values = [[
+                    record.id,
+                    record.attendance_id,
+                    record.student_id,
+                    record.student_nis,
+                    record.student_nama,
+                    record.lat,
+                    record.lng,
+                    record.accuracy,
+                    record.within_radius,
+                    record.distance,
+                    record.timestamp
+                ]];
+
+                const formData = new FormData();
+                formData.append('action', 'saveLocations');
+                formData.append('data', JSON.stringify(values));
+                formData.append('callback', 'callback');
+
+                await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'cors',
+                    body: formData
+                });
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Gagal simpan lokasi:', error);
+                return false;
             }
-
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    currentLocation = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                        accuracy: position.coords.accuracy
-                    };
-
-                    const distance = calculateDistance(
-                        currentLocation.lat,
-                        currentLocation.lng,
-                        configData.school_lat,
-                        configData.school_lng
-                    );
-
-                    const withinRadius = distance <= configData.school_radius;
-
-                    document.getElementById('locationStatus').innerHTML = `
-                        ${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} (Akurasi: ±${Math.round(currentLocation.accuracy)}m)
-                    `;
-
-                    const badge = document.getElementById('locationBadge');
-                    badge.className = withinRadius ? 
-                        'px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold' :
-                        'px-3 py-1 bg-red-100 text-red-700 rounded-full text-xs font-semibold';
-                    badge.innerHTML = withinRadius ? 
-                        `<i class="fas fa-check-circle mr-1"></i>Dalam Radius (${Math.round(distance)}m)` :
-                        `<i class="fas fa-times-circle mr-1"></i>Luar Radius (${Math.round(distance)}m)`;
-
-                },
-                (error) => {
-                    console.error('Location error:', error);
-                    document.getElementById('locationStatus').textContent = 'Gagal mendapatkan lokasi';
-                    document.getElementById('locationBadge').innerHTML = '<i class="fas fa-exclamation-triangle mr-1"></i>Error';
-                },
-                {
-                    enableHighAccuracy: true,
-                    timeout: 10000,
-                    maximumAge: 0
-                }
-            );
         }
 
+        // ==================== FUNGSI LOAD DATA ====================
+        async function loadStudents() {
+            try {
+                const rows = await fetchSheetData('STUDENTS');
+                
+                if (rows && rows.length > 1) {
+                    // Konversi dari array ke object
+                    const headers = rows[0];
+                    students = [];
+                    
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length === 0) continue;
+                        
+                        const student = {};
+                        headers.forEach((header, index) => {
+                            if (header && header.trim()) {
+                                student[header.trim()] = row[index] || '';
+                            }
+                        });
+                        students.push(student);
+                    }
+                    
+                    // Update cache
+                    studentCache.clear();
+                    students.forEach(student => {
+                        const nis = String(student.nis).trim();
+                        studentCache.set(nis, student);
+                        studentCache.set(nis.replace(/^0+/, ''), student);
+                    });
+                }
+                
+                console.log('📚 Loaded students:', students.length);
+                return students;
+            } catch (error) {
+                console.error('❌ Gagal load siswa:', error);
+                showToast('Gagal memuat data siswa', 'error');
+                return [];
+            }
+        }
+
+        async function loadAttendance() {
+            try {
+                const rows = await fetchSheetData('ATTENDANCE');
+                
+                if (rows && rows.length > 1) {
+                    const headers = rows[0];
+                    attendanceRecords = [];
+                    
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length === 0) continue;
+                        
+                        const record = {};
+                        headers.forEach((header, index) => {
+                            if (header && header.trim()) {
+                                let value = row[index] || '';
+                                
+                                // Parse location
+                                if (header === 'location_lat') record.location_lat = parseFloat(value) || 0;
+                                else if (header === 'location_lng') record.location_lng = parseFloat(value) || 0;
+                                else if (header === 'location_accuracy') record.location_accuracy = parseFloat(value) || 0;
+                                else if (header === 'timestamp') record.timestamp = parseInt(value) || 0;
+                                else record[header.trim()] = value;
+                            }
+                        });
+                        
+                        // Parse location object
+                        if (record.location_lat && record.location_lng) {
+                            record.location = {
+                                lat: record.location_lat,
+                                lng: record.location_lng,
+                                accuracy: record.location_accuracy || 0,
+                                timestamp: record.timestamp || Date.now()
+                            };
+                            delete record.location_lat;
+                            delete record.location_lng;
+                            delete record.location_accuracy;
+                        }
+                        
+                        attendanceRecords.push(record);
+                    }
+                }
+                
+                console.log('📋 Loaded attendance:', attendanceRecords.length);
+                updateRecentScans();
+                
+                return attendanceRecords;
+            } catch (error) {
+                console.error('❌ Gagal load absensi:', error);
+                return [];
+            }
+        }
+
+        async function loadLocationRecords() {
+            try {
+                const rows = await fetchSheetData('LOCATIONS');
+                
+                if (rows && rows.length > 1) {
+                    const headers = rows[0];
+                    locationRecords = [];
+                    
+                    for (let i = 1; i < rows.length; i++) {
+                        const row = rows[i];
+                        if (row.length === 0) continue;
+                        
+                        const record = {};
+                        headers.forEach((header, index) => {
+                            if (header && header.trim()) {
+                                let value = row[index] || '';
+                                if (header === 'lat' || header === 'lng' || header === 'accuracy') {
+                                    record[header] = parseFloat(value) || 0;
+                                } else if (header === 'timestamp') {
+                                    record[header] = parseInt(value) || 0;
+                                } else {
+                                    record[header] = value;
+                                }
+                            }
+                        });
+                        locationRecords.push(record);
+                    }
+                }
+                
+                return locationRecords;
+            } catch (error) {
+                console.error('❌ Gagal load lokasi:', error);
+                return [];
+            }
+        }
+
+        async function loadConfig() {
+            try {
+                const data = await fetchSheetData('CONFIG');
+                
+                if (data && typeof data === 'object') {
+                    configData = data;
+                    
+                    if (configData.school_logo) {
+                        document.getElementById('openingLogoImage').src = configData.school_logo;
+                        document.getElementById('openingLogoImage').classList.remove('hidden');
+                        document.getElementById('openingLogoIcon').classList.add('hidden');
+                    }
+                }
+                
+                return configData;
+            } catch (error) {
+                console.error('❌ Gagal load config:', error);
+                return {};
+            }
+        }
+
+        // ==================== FUNGSI OPENING ====================
+        async function loadOpeningLogo() {
+            await loadConfig();
+        }
+
+        function closeOpening() {
+            setTimeout(() => {
+                document.getElementById('openingOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('openingOverlay').style.display = 'none';
+                    document.getElementById('loginContainer').classList.add('visible');
+                }, 800);
+            }, 2000);
+        }
+
+        // ==================== FUNGSI LOGIN ====================
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'admin' && password === 'admin123') {
+                showToast('Login berhasil!', 'success');
+                
+                document.getElementById('loginContainer').classList.remove('visible');
+                document.getElementById('mainContainer').classList.add('visible');
+                
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('password').type = 'password';
+                document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+                document.getElementById('togglePassword').classList.add('fa-eye');
+                
+                if (typeof Html5QrcodeScanner !== 'undefined') {
+                    checkCameraAndStart();
+                }
+            } else {
+                showToast('Username atau password salah!', 'error');
+            }
+        }
+
+        function handleLogout() {
+            stopScanner();
+            
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            document.getElementById('mainContainer').classList.remove('visible');
+            document.getElementById('loginContainer').classList.add('visible');
+            
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('password').type = 'password';
+            document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+            document.getElementById('togglePassword').classList.add('fa-eye');
+            
+            document.getElementById('locationStatus').classList.remove('visible');
+            
+            showToast('Berhasil logout', 'info');
+        }
+
+        // ==================== FUNGSI LOKASI ====================
         function calculateDistance(lat1, lon1, lat2, lon2) {
             const R = 6371e3;
             const φ1 = lat1 * Math.PI/180;
@@ -1009,79 +1404,654 @@
             return R * c;
         }
 
-        // ==================== UI FUNCTIONS ====================
-        function toggleMode() {
-            currentMode = currentMode === 'hadir' ? 'pulang' : 'hadir';
-            document.getElementById('modeText').textContent = currentMode === 'hadir' ? 'Hadir' : 'Pulang';
+        function isWithinSchoolRadius(lat, lng) {
+            if (!lat || !lng) return false;
+            const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+            return distance <= SCHOOL_LOCATION.radius;
+        }
+
+        function getLocationStatus(lat, lng) {
+            if (!lat || !lng) return { valid: false, text: 'Lokasi tidak diketahui', class: '', distance: null };
             
-            const btn = document.getElementById('modeToggle');
-            if (currentMode === 'hadir') {
-                btn.className = 'px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl text-sm font-semibold';
+            const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+            const withinRadius = distance <= SCHOOL_LOCATION.radius;
+            
+            return {
+                valid: withinRadius,
+                text: withinRadius ? `✅ Dalam radius (${Math.round(distance)}m dari sekolah)` : `❌ Luar radius (${Math.round(distance)}m dari sekolah)`,
+                class: withinRadius ? 'location-valid' : 'location-invalid',
+                distance: Math.round(distance)
+            };
+        }
+
+        function startLocationTracking() {
+            if (!navigator.geolocation) {
+                showToast('Browser tidak mendukung GPS', 'error');
+                return;
+            }
+
+            const locationDiv = document.getElementById('locationStatus');
+            const locationText = document.getElementById('locationText');
+            const locationCoord = document.getElementById('locationCoord');
+            const locationValidity = document.getElementById('locationValidity');
+
+            locationDiv.classList.add('visible');
+            locationText.textContent = 'Mendapatkan lokasi...';
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                (position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp
+                    };
+
+                    const status = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                    
+                    locationText.textContent = `Lokasi: ${status.text}`;
+                    locationCoord.innerHTML = `
+                        <i class="fas fa-crosshairs mr-1"></i>${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} 
+                        <span class="text-xs ml-1">±${Math.round(currentLocation.accuracy)}m</span>
+                    `;
+                    locationValidity.innerHTML = `
+                        <span class="location-badge ${status.class}">${status.text}</span>
+                    `;
+
+                    showToast('Lokasi terdeteksi', 'success');
+                },
+                (error) => {
+                    console.error('Location error:', error);
+                    let errorMsg = 'Gagal mendapatkan lokasi';
+                    if (error.code === 1) errorMsg = 'Akses lokasi ditolak';
+                    else if (error.code === 2) errorMsg = 'Lokasi tidak tersedia';
+                    else if (error.code === 3) errorMsg = 'Timeout mendapatkan lokasi';
+                    
+                    locationText.textContent = errorMsg;
+                    locationCoord.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Periksa pengaturan GPS';
+                    showToast(errorMsg, 'error');
+                },
+                options
+            );
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp
+                    };
+
+                    const status = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                    
+                    locationText.textContent = `Lokasi: ${status.text}`;
+                    locationCoord.innerHTML = `
+                        <i class="fas fa-crosshairs mr-1"></i>${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} 
+                        <span class="text-xs ml-1">±${Math.round(currentLocation.accuracy)}m</span>
+                    `;
+                    locationValidity.innerHTML = `
+                        <span class="location-badge ${status.class}">${status.text}</span>
+                    `;
+                },
+                (error) => {
+                    console.error('Watch position error:', error);
+                },
+                options
+            );
+        }
+
+        function stopLocationTracking() {
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
+        }
+
+        function findStudentByNIS(nisFromQR) {
+            if (!students || students.length === 0) {
+                console.log('⚠️ Data siswa kosong');
+                return null;
+            }
+            
+            const cleanNis = String(nisFromQR).trim();
+            
+            if (studentCache.has(cleanNis)) {
+                return studentCache.get(cleanNis);
+            }
+            
+            const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
+            if (studentCache.has(withoutLeadingZeros)) {
+                return studentCache.get(withoutLeadingZeros);
+            }
+            
+            let student = students.find(s => String(s.nis).trim() === cleanNis);
+            if (student) return student;
+            
+            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
+            if (student) return student;
+            
+            const last7Digits = cleanNis.slice(-7);
+            student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
+            
+            return student || null;
+        }
+
+        function generateId() {
+            return 'QR' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase();
+        }
+
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function formatDateTime(timestamp) {
+            return new Date(timestamp).toLocaleString('id-ID', {
+                day: 'numeric',
+                month: 'long',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        function updateRecentScans() {
+            const today = formatDate(new Date());
+            todayScans = attendanceRecords
+                .filter(r => r.tanggal === today && r.metode === 'qr')
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 5);
+            
+            const listEl = document.getElementById('recentList');
+            const countEl = document.getElementById('scanCount');
+            
+            if (todayScans.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-4"><i class="fas fa-camera text-3xl mb-2 opacity-50"></i><p>Belum ada scan hari ini</p></div>';
+                countEl.textContent = '0 hari ini';
+                return;
+            }
+            
+            countEl.textContent = `${todayScans.length} hari ini`;
+            
+            listEl.innerHTML = todayScans.map(scan => {
+                const waktu = new Date(scan.timestamp).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const locationValid = scan.location && isWithinSchoolRadius(scan.location.lat, scan.location.lng);
+                
+                return `
+                    <div class="scan-item">
+                        <div>
+                            <div class="font-bold text-sm">${scan.student_nama}</div>
+                            <div class="text-xs text-gray-500">${scan.student_kelas} | ID: ${scan.id}</div>
+                            ${scan.location ? `
+                                <div class="text-xs ${locationValid ? 'text-green-600' : 'text-red-600'} font-semibold mt-1">
+                                    <i class="fas fa-map-pin mr-1"></i>${locationValid ? 'Dalam radius' : 'Luar radius'}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-bold">${waktu}</div>
+                            <span class="badge badge-success mt-1 inline-block">QR</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== FUNGSI SCANNER ====================
+        async function onScanSuccess(decodedText) {
+            if (isLoading) {
+                showToast('Sedang memproses scan sebelumnya...', 'warning');
+                return;
+            }
+            
+            isLoading = true;
+            
+            if (html5QrcodeScanner && isScanning) {
+                try {
+                    await html5QrcodeScanner.pause();
+                } catch (e) {
+                    console.error('Pause scanner error:', e);
+                }
+            }
+            
+            try {
+                const nisFromQR = decodedText.trim();
+                console.log('🔍 QR terdeteksi:', nisFromQR);
+                
+                showToast('Memproses scan...', 'info');
+                
+                if (!currentLocation) {
+                    showStatus(
+                        'error',
+                        '❌ Lokasi Tidak Ditemukan',
+                        'Aktifkan GPS dan izinkan akses lokasi',
+                        null,
+                        nisFromQR
+                    );
+                    showToast('Aktifkan GPS terlebih dahulu', 'error');
+                    
+                    scheduleScannerResume();
+                    isLoading = false;
+                    return;
+                }
+                
+                const locationValid = isWithinSchoolRadius(currentLocation.lat, currentLocation.lng);
+                const locationStatus = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                
+                const student = findStudentByNIS(nisFromQR);
+                
+                if (!student) {
+                    showStatus(
+                        'error', 
+                        '❌ Siswa Tidak Ditemukan', 
+                        `NIS ${nisFromQR} tidak terdaftar di sistem.`, 
+                        null,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    showToast('Siswa tidak ditemukan!', 'error');
+                    
+                    startCountdown();
+                    isLoading = false;
+                    return;
+                }
+                
+                const today = formatDate(new Date());
+                const alreadyAbsent = attendanceRecords.some(r => 
+                    r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
+                );
+                
+                if (alreadyAbsent) {
+                    showStatus(
+                        'warning', 
+                        '⚠️ Sudah Absen Hari Ini', 
+                        `${student.nama} (ID: ${student.id}) sudah melakukan absensi hari ini.`, 
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    showToast('Sudah absen hari ini', 'warning');
+                    
+                    startCountdown();
+                    isLoading = false;
+                    return;
+                }
+                
+                const now = new Date();
+                const attendanceId = generateId();
+                const newAttendance = {
+                    id: attendanceId,
+                    student_id: student.id,
+                    student_nis: student.nis,
+                    student_nama: student.nama,
+                    student_kelas: student.kelas,
+                    student_jurusan: student.jurusan,
+                    student_photo: student.photo || '',
+                    status: 'hadir',
+                    metode: 'qr',
+                    location: {
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy,
+                        timestamp: currentLocation.timestamp
+                    },
+                    keterangan: `Absen via QR. Jarak: ${locationStatus.distance}m dari sekolah. Akurasi: ±${Math.round(currentLocation.accuracy)}m`,
+                    tanggal: formatDate(now),
+                    timestamp: now.getTime()
+                };
+                
+                const saved = await saveAttendance(newAttendance);
+                
+                if (saved) {
+                    await saveLocationRecord({
+                        id: generateId(),
+                        attendance_id: attendanceId,
+                        student_id: student.id,
+                        student_nis: student.nis,
+                        student_nama: student.nama,
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy,
+                        within_radius: locationValid,
+                        distance: locationStatus.distance,
+                        timestamp: now.getTime()
+                    });
+                    
+                    let message = `Selamat datang, ${student.nama}`;
+                    if (!locationValid) {
+                        message = `Peringatan: Anda di luar radius sekolah (${locationStatus.distance}m)`;
+                    }
+                    
+                    showStatus(
+                        locationValid ? 'success' : 'warning',
+                        locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absensi Tercatat (Luar Radius)',
+                        message,
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    
+                    showToast(locationValid ? 'Kehadiran tercatat!' : 'Absen tercatat (luar radius)', locationValid ? 'success' : 'warning');
+                    
+                    await loadAttendance();
+                    
+                    startCountdown();
+                } else {
+                    showStatus(
+                        'error', 
+                        '❌ Gagal Menyimpan', 
+                        'Terjadi kesalahan server. Coba lagi.', 
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    
+                    startCountdown();
+                }
+                
+            } catch (error) {
+                console.error('Error processing scan:', error);
+                showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
+                showToast('Error: ' + error.message, 'error');
+                
+                startCountdown();
+            } finally {
+                isLoading = false;
+            }
+        }
+
+        function startCountdown() {
+            countdownSeconds = 3;
+            const timerEl = document.getElementById('countdownTimer');
+            
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            countdownInterval = setInterval(() => {
+                countdownSeconds--;
+                timerEl.innerHTML = `Kembali ke scanner dalam <strong>${countdownSeconds}</strong> detik`;
+                
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    resumeScanner();
+                }
+            }, 1000);
+        }
+
+        function skipCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            resumeScanner();
+        }
+
+        function scheduleScannerResume() {
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+            }
+            
+            autoResumeTimeout = setTimeout(() => {
+                resumeScanner();
+                autoResumeTimeout = null;
+            }, 3000);
+        }
+
+        function resumeScanner() {
+            if (html5QrcodeScanner && document.getElementById('mainContainer').classList.contains('visible')) {
+                try {
+                    html5QrcodeScanner.resume();
+                    isScanning = true;
+                    
+                    document.getElementById('statusCard').style.display = 'none';
+                    
+                    document.querySelector('.scanner-container').style.display = 'block';
+                    document.getElementById('recentScans').style.display = 'block';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    showToast('Siap scan berikutnya', 'info');
+                } catch (e) {
+                    console.error('Resume scanner error:', e);
+                }
+            }
+        }
+
+        function onScanError(error) {}
+
+        function showStatus(type, title, message, student, nisFromQR, location, locationStatus) {
+            const card = document.getElementById('statusCard');
+            const icon = document.getElementById('statusIcon');
+            const titleEl = document.getElementById('statusTitle');
+            const messageEl = document.getElementById('statusMessage');
+            const detailEl = document.getElementById('studentDetail');
+            const miniMap = document.getElementById('miniMap');
+            const timerEl = document.getElementById('countdownTimer');
+            
+            card.className = 'status-card ' + type;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            icon.innerHTML = icons[type] || '❓';
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>3</strong> detik';
+            
+            if (student) {
+                document.getElementById('detailId').textContent = student.id || '-';
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = student.nis;
+                document.getElementById('detailNama').textContent = student.nama;
+                document.getElementById('detailKelas').textContent = student.kelas;
+                document.getElementById('detailJurusan').textContent = student.jurusan;
+                document.getElementById('detailCreatedAt').textContent = student.created_at ? formatDateTime(parseInt(student.created_at)) : '-';
+                
+                if (location) {
+                    document.getElementById('detailLokasi').innerHTML = `
+                        ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}<br>
+                        <span class="text-xs text-gray-500">Akurasi: ±${Math.round(location.accuracy)}m</span>
+                    `;
+                    document.getElementById('detailLokasiStatus').innerHTML = `
+                        <span class="location-badge ${locationStatus.class}">${locationStatus.text}</span>
+                    `;
+                    
+                    miniMap.classList.remove('hidden');
+                    miniMap.innerHTML = `<iframe 
+                        width="100%" 
+                        height="150" 
+                        frameborder="0" 
+                        style="border:0; border-radius: 20px;" 
+                        src="https://www.google.com/maps/embed/v1/view?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&center=${location.lat},${location.lng}&zoom=15&maptype=roadmap"
+                        allowfullscreen>
+                    </iframe>`;
+                } else {
+                    document.getElementById('detailLokasi').textContent = '-';
+                    document.getElementById('detailLokasiStatus').textContent = '-';
+                    miniMap.classList.add('hidden');
+                }
+                
+                document.getElementById('detailWaktu').textContent = formatTime(new Date());
+                detailEl.style.display = 'block';
             } else {
-                btn.className = 'px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl text-sm font-semibold';
+                document.getElementById('detailId').textContent = '-';
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = '-';
+                document.getElementById('detailNama').textContent = '-';
+                document.getElementById('detailKelas').textContent = '-';
+                document.getElementById('detailJurusan').textContent = '-';
+                document.getElementById('detailCreatedAt').textContent = '-';
+                document.getElementById('detailLokasi').textContent = '-';
+                document.getElementById('detailLokasiStatus').textContent = '-';
+                detailEl.style.display = 'block';
+                miniMap.classList.add('hidden');
             }
             
-            showToast(`Mode: Absen ${currentMode === 'hadir' ? 'Hadir' : 'Pulang'}`, 'info');
+            document.querySelector('.scanner-container').style.display = 'none';
+            document.getElementById('recentScans').style.display = 'none';
+            document.getElementById('startBtn').style.display = 'none';
+            document.getElementById('stopBtn').style.display = 'none';
+            
+            card.style.display = 'block';
         }
 
-        function cancelScan() {
-            scannedStudent = null;
-            document.getElementById('resultCard').classList.add('hidden');
+        function startScanner() {
+            if (!html5QrcodeScanner) {
+                initScanner();
+            } else {
+                try {
+                    html5QrcodeScanner.render(onScanSuccess, onScanError);
+                    isScanning = true;
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    startLocationTracking();
+                } catch (e) {
+                    console.error('Start scanner error:', e);
+                    showToast('Gagal memulai kamera', 'error');
+                }
+            }
+        }
+
+        function stopScanner() {
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
             
-            // Restart scanner
-            if (!isScanning) {
+            if (html5QrcodeScanner && isScanning) {
+                try {
+                    html5QrcodeScanner.clear();
+                    isScanning = false;
+                    document.getElementById('startBtn').style.display = 'block';
+                    document.getElementById('stopBtn').style.display = 'none';
+                    
+                    stopLocationTracking();
+                    document.getElementById('locationStatus').classList.remove('visible');
+                } catch (e) {
+                    console.error('Stop scanner error:', e);
+                }
+            }
+        }
+
+        function initScanner() {
+            try {
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    rememberLastUsedCamera: true,
+                    showTorchButtonIfSupported: true,
+                    showZoomSliderIfSupported: true,
+                    defaultZoomValueIfSupported: 2
+                };
+                
+                html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", config, false);
+                html5QrcodeScanner.render(onScanSuccess, onScanError);
+                isScanning = true;
+                
+                document.getElementById('startBtn').style.display = 'none';
+                document.getElementById('stopBtn').style.display = 'block';
+                
+                startLocationTracking();
+                
+            } catch (error) {
+                console.error('Init scanner error:', error);
+                showToast('Gagal inisialisasi kamera', 'error');
+            }
+        }
+
+        async function checkCameraAndStart() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
+                await loadStudents();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
+                await loadAttendance();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
+                await loadLocationRecords();
+                
                 startScanner();
+            } catch (err) {
+                showToast('Izinkan akses kamera untuk memindai QR', 'error');
+                console.error('Camera permission error:', err);
             }
         }
 
-        function showToast(message, type = 'success') {
+        function showToast(message, type = 'info', duration = 3000) {
             const container = document.getElementById('toastContainer');
             const toast = document.createElement('div');
-            toast.className = `toast toast-${type}`;
-            toast.innerHTML = `<i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}"></i>${message}`;
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-xl"></i>
+                <span>${message}</span>
+            `;
             container.appendChild(toast);
-            setTimeout(() => toast.remove(), 3000);
-        }
-
-        function showLoading(message = 'Memproses...') {
-            document.getElementById('loadingMessage').textContent = message;
-            document.getElementById('loadingOverlay').classList.remove('hidden');
-        }
-
-        function hideLoading() {
-            document.getElementById('loadingOverlay').classList.add('hidden');
-        }
-
-        // ==================== INIT ====================
-        async function init() {
-            document.getElementById('openingStatus').textContent = 'Memuat data...';
-            await loadAllData();
-
+            
             setTimeout(() => {
-                document.getElementById('openingOverlay').style.opacity = '0';
-                setTimeout(() => {
-                    document.getElementById('openingOverlay').style.display = 'none';
-                    document.getElementById('mainApp').classList.remove('hidden');
-                    
-                    // Start location and scanner
-                    getLocation();
-                    setTimeout(() => {
-                        startScanner();
-                    }, 500);
-                }, 300);
-            }, 1000);
+                toast.remove();
+            }, duration);
+        }
 
-            // Update location periodically
-            setInterval(getLocation, 30000);
+        async function init() {
+            await loadOpeningLogo();
+            
+            document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
+            await loadStudents();
+            
+            document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
+            await loadAttendance();
+            
+            document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
+            await loadLocationRecords();
+            
+            closeOpening();
+            
+            if (typeof Html5QrcodeScanner === 'undefined') {
+                showToast('Library QR Code tidak tersedia', 'error');
+                return;
+            }
         }
 
         window.onload = init;
-
-        // Export functions
-        window.toggleMode = toggleMode;
-        window.confirmAbsen = confirmAbsen;
-        window.cancelScan = cancelScan;
-        window.convertGoogleDriveLink = convertGoogleDriveLink;
     </script>
 </body>
 </html>
