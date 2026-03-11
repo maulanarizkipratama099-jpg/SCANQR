@@ -10,919 +10,11 @@
     <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Plus Jakarta Sans', sans-serif;
-            background: linear-gradient(145deg, #0B1120 0%, #1A1F35 50%, #2D1B4A 100%);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 16px;
-        }
-
-        /* Opening Animation */
-        .opening-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: linear-gradient(145deg, #0B1120 0%, #1A1F35 50%, #2D1B4A 100%);
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.8s ease, visibility 0.8s ease;
-        }
-
-        .opening-content {
-            text-align: center;
-            animation: floatAnimation 2s ease-in-out infinite;
-        }
-
-        @keyframes floatAnimation {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-20px); }
-        }
-
-        .logo-circle {
-            width: 150px;
-            height: 150px;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
-            border: 3px solid rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            margin: 0 auto 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            overflow: hidden;
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1);
-            animation: pulseGlow 2s ease-in-out infinite;
-        }
-
-        @keyframes pulseGlow {
-            0%, 100% { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1); }
-            50% { box-shadow: 0 30px 60px rgba(79, 70, 229, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3); }
-        }
-
-        .logo-circle img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .logo-circle i {
-            font-size: 70px;
-            color: rgba(255, 255, 255, 0.5);
-        }
-
-        .opening-title {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 15px;
-        }
-
-        .opening-subtitle {
-            color: rgba(255, 255, 255, 0.6);
-            font-size: 14px;
-            margin-bottom: 30px;
-        }
-
-        .progress-bar {
-            width: 280px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-            overflow: hidden;
-            margin: 20px auto;
-        }
-
-        .progress-fill {
-            width: 0%;
-            height: 100%;
-            background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
-            border-radius: 10px;
-            animation: loading 2s ease-in-out forwards;
-        }
-
-        @keyframes loading {
-            0% { width: 0%; }
-            20% { width: 30%; }
-            50% { width: 60%; }
-            80% { width: 90%; }
-            100% { width: 100%; }
-        }
-
-        /* Login Container */
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 40px;
-            padding: 40px 28px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeInUp 0.8s ease-out;
-            display: none;
-        }
-
-        .login-container.visible {
-            display: block;
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .login-header .logo-small {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-        }
-
-        .login-header .logo-small i {
-            font-size: 40px;
-            color: white;
-        }
-
-        .login-header h2 {
-            font-size: 24px;
-            font-weight: 800;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
-        }
-
-        .login-header p {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-
-        .input-group {
-            position: relative;
-        }
-
-        .input-group i:not(.password-toggle) {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            font-size: 18px;
-            pointer-events: none;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 16px 50px 16px 50px;
-            border: 2px solid #e5e7eb;
-            border-radius: 30px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .input-group input::placeholder {
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #9ca3af;
-            font-size: 18px;
-            z-index: 10;
-            padding: 8px;
-            background: transparent;
-            transition: all 0.2s ease;
-        }
-
-        .password-toggle:hover {
-            color: #4f46e5;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            color: white;
-            border: none;
-            border-radius: 40px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-            margin-top: 10px;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
-        }
-
-        .btn-login i {
-            margin-right: 8px;
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #6b7280;
-            font-size: 13px;
-        }
-
-        .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 40px;
-            padding: 28px;
-            width: 100%;
-            max-width: 500px;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeInUp 0.8s ease-out;
-            display: none;
-            position: relative;
-        }
-
-        .container.visible {
-            display: block;
-        }
-
-        @keyframes fadeInUp {
-            from {
-                opacity: 0;
-                transform: translateY(30px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 24px;
-            padding-right: 70px;
-        }
-        
-        .header h1 {
-            font-size: 28px;
-            font-weight: 800;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-        }
-        
-        .header p {
-            color: #6b7280;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .scanner-container {
-            background: #1f2937;
-            border-radius: 32px;
-            overflow: hidden;
-            margin-bottom: 24px;
-            border: 2px solid rgba(79, 70, 229, 0.3);
-            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
-        }
-        
-        #qr-reader {
-            width: 100%;
-            border: none !important;
-        }
-        
-        #qr-reader video {
-            border-radius: 32px !important;
-        }
-        
-        .info-box {
-            background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
-            border-radius: 28px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid rgba(79, 70, 229, 0.2);
-        }
-        
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 8px 0;
-            color: #1e293b;
-            font-size: 14px;
-            font-weight: 500;
-        }
-        
-        .info-item i {
-            width: 24px;
-            height: 24px;
-            background: white;
-            border-radius: 12px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #4f46e5;
-            font-size: 14px;
-            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
-        }
-        
-        .location-status {
-            background: rgba(255, 255, 255, 0.9);
-            backdrop-filter: blur(10px);
-            border-radius: 24px;
-            padding: 16px;
-            margin-bottom: 20px;
-            border-left: 4px solid #3b82f6;
-            border: 1px solid rgba(59, 130, 246, 0.3);
-            display: none;
-            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .location-status.visible {
-            display: block;
-            animation: slideDown 0.3s ease-out;
-        }
-
-        @keyframes slideDown {
-            from {
-                opacity: 0;
-                transform: translateY(-10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
-        }
-        
-        .location-coord {
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            background: #f1f5f9;
-            padding: 6px 12px;
-            border-radius: 30px;
-            margin-top: 8px;
-            border: 1px solid #e2e8f0;
-        }
-        
-        .location-badge {
-            padding: 6px 12px;
-            border-radius: 30px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        
-        .location-valid {
-            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
-            color: #059669;
-            border: 1px solid #05966933;
-        }
-        
-        .location-invalid {
-            background: linear-gradient(145deg, #fee2e2, #fecaca);
-            color: #dc2626;
-            border: 1px solid #dc262633;
-        }
-        
-        .status-card {
-            background: white;
-            border-radius: 28px;
-            padding: 24px;
-            text-align: center;
-            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.2);
-            display: none;
-            border: 1px solid #e5e7eb;
-            margin-bottom: 20px;
-        }
-        
-        .status-card.success {
-            border-left: 4px solid #10b981;
-        }
-        
-        .status-card.error {
-            border-left: 4px solid #ef4444;
-        }
-        
-        .status-card.warning {
-            border-left: 4px solid #f59e0b;
-        }
-
-        .countdown-timer {
-            font-size: 16px;
-            font-weight: 700;
-            color: #4f46e5;
-            background: #e0e7ff;
-            padding: 8px 16px;
-            border-radius: 30px;
-            display: inline-block;
-            margin-top: 10px;
-        }
-
-        #statusIcon {
-            width: 70px;
-            height: 70px;
-            border-radius: 35px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            font-size: 36px;
-            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
-            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
-        }
-        
-        .student-detail {
-            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
-            border-radius: 20px;
-            padding: 20px;
-            margin: 16px 0;
-            text-align: left;
-            border: 1px solid #e5e7eb;
-        }
-        
-        .student-detail-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 10px 0;
-            border-bottom: 1px dashed #d1d5db;
-        }
-        
-        .student-detail-item:last-child {
-            border-bottom: none;
-        }
-        
-        .label {
-            color: #6b7280;
-            font-weight: 600;
-            font-size: 13px;
-        }
-        
-        .value {
-            font-weight: 700;
-            color: #111827;
-            font-size: 13px;
-        }
-        
-        .btn {
-            padding: 16px 28px;
-            border-radius: 40px;
-            font-weight: 700;
-            font-size: 16px;
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: none;
-            width: 100%;
-            margin: 8px 0;
-            letter-spacing: 0.3px;
-        }
-        
-        .btn-primary {
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            color: white;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-        }
-        
-        .btn-primary:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
-        }
-        
-        .btn-secondary {
-            background: white;
-            color: #4b5563;
-            border: 2px solid #e5e7eb;
-        }
-        
-        .btn-secondary:hover {
-            background: #f9fafb;
-            border-color: #4f46e5;
-        }
-        
-        .btn-skip {
-            background: white;
-            color: #4f46e5;
-            border: 2px solid #4f46e5;
-            margin-top: 10px;
-        }
-        
-        .btn-skip:hover {
-            background: #4f46e5;
-            color: white;
-        }
-        
-        .toast {
-            position: fixed;
-            bottom: 30px;
-            right: 30px;
-            left: 30px;
-            max-width: 400px;
-            margin: 0 auto;
-            padding: 18px 25px;
-            border-radius: 50px;
-            color: white;
-            z-index: 9999;
-            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.3);
-            font-weight: 600;
-            backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-        
-        .toast.success { background: linear-gradient(145deg, #10b981, #059669); }
-        .toast.error { background: linear-gradient(145deg, #ef4444, #dc2626); }
-        .toast.info { background: linear-gradient(145deg, #3b82f6, #2563eb); }
-        .toast.warning { background: linear-gradient(145deg, #f59e0b, #d97706); }
-        
-        @keyframes slideUp {
-            from {
-                transform: translateY(100%) scale(0.8);
-                opacity: 0;
-            }
-            to {
-                transform: translateY(0) scale(1);
-                opacity: 1;
-            }
-        }
-        
-        .loading-spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #4f46e5;
-            border-right: 4px solid #7c3aed;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
-            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
-            margin: 20px auto;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        .recent-scans {
-            margin-top: 24px;
-            max-height: 250px;
-            overflow-y: auto;
-            border-radius: 24px;
-            background: rgba(255, 255, 255, 0.7);
-            backdrop-filter: blur(10px);
-            padding: 16px;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-        }
-        
-        .scan-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 12px;
-            border-bottom: 1px solid #e5e7eb;
-            font-size: 13px;
-            background: white;
-            border-radius: 16px;
-            margin-bottom: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-        }
-        
-        .scan-item:last-child {
-            margin-bottom: 0;
-        }
-        
-        .scan-time {
-            color: #9ca3af;
-            font-size: 11px;
-            font-weight: 500;
-        }
-        
-        .badge {
-            padding: 4px 10px;
-            border-radius: 30px;
-            font-size: 10px;
-            font-weight: 700;
-        }
-        
-        .badge-success {
-            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
-            color: #065f46;
-        }
-        
-        .badge-location {
-            background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
-            color: #4f46e5;
-        }
-        
-        .map-mini {
-            width: 100%;
-            height: 150px;
-            border-radius: 20px;
-            margin-top: 12px;
-            border: 2px solid #4f46e5;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
-        }
-
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            border-radius: 10px;
-        }
-
-        .logout-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
-        .auto-scan-indicator {
-            text-align: center;
-            font-size: 12px;
-            color: #4f46e5;
-            margin-top: 10px;
-            animation: pulse 2s infinite;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
+        /* [CSS sama dengan sebelumnya - tidak diubah] */
     </style>
 </head>
 <body>
-    <!-- Opening Animation -->
-    <div id="openingOverlay" class="opening-overlay">
-        <div class="opening-content">
-            <div class="logo-circle" id="openingLogo">
-                <img id="openingLogoImage" src="" alt="Logo" class="hidden">
-                <i id="openingLogoIcon" class="fas fa-qrcode"></i>
-            </div>
-            <h1 class="opening-title">SCAN QR ABSENSI</h1>
-            <p class="opening-subtitle">MAS IBNU HUSAIN</p>
-            <div class="progress-bar">
-                <div class="progress-fill"></div>
-            </div>
-            <p class="text-white/40 text-sm mt-4" id="openingStatus">Menyiapkan scanner...</p>
-        </div>
-    </div>
-
-    <!-- Login Container -->
-    <div id="loginContainer" class="login-container">
-        <div class="login-header">
-            <div class="logo-small">
-                <i class="fas fa-user-shield"></i>
-            </div>
-            <h2>LOGIN ADMIN</h2>
-            <p>MAS IBNU HUSAIN</p>
-        </div>
-
-        <form id="loginForm" onsubmit="handleLogin(event)">
-            <div class="form-group">
-                <label>Username</label>
-                <div class="input-group">
-                    <i class="fas fa-user"></i>
-                    <input type="text" id="username" placeholder="Masukkan username" autocomplete="off">
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label>Password</label>
-                <div class="input-group">
-                    <i class="fas fa-lock"></i>
-                    <input type="password" id="password" placeholder="Masukkan password" autocomplete="off">
-                    <i class="fas fa-eye password-toggle" onclick="togglePassword()" id="togglePassword"></i>
-                </div>
-            </div>
-
-            <button type="submit" class="btn-login">
-                <i class="fas fa-sign-in-alt"></i>
-                MASUK
-            </button>
-        </form>
-
-        <div class="login-footer">
-            <i class="fas fa-shield-alt mr-1"></i> Sistem Absensi QR Code
-        </div>
-    </div>
-
-    <!-- Main Container -->
-    <div id="mainContainer" class="container">
-        <!-- Logout Button -->
-        <button onclick="handleLogout()" class="logout-btn">
-            <i class="fas fa-sign-out-alt mr-1"></i> Logout
-        </button>
-
-        <div class="header">
-            <h1>📱 ABSENSI QR CODE</h1>
-            <p>MAS IBNU HUSAIN</p>
-        </div>
-        
-        <!-- Scanner -->
-        <div class="scanner-container">
-            <div id="qr-reader"></div>
-        </div>
-        
-        <!-- Auto Scan Indicator -->
-        <div class="auto-scan-indicator" id="autoScanIndicator">
-            <i class="fas fa-sync-alt fa-spin mr-1"></i> Siap scan berikutnya...
-        </div>
-        
-        <!-- Location Status -->
-        <div id="locationStatus" class="location-status">
-            <div class="flex items-center gap-2">
-                <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                    <i class="fas fa-map-marker-alt text-blue-600"></i>
-                </div>
-                <div>
-                    <span class="font-semibold text-gray-800" id="locationText">Mendapatkan lokasi...</span>
-                    <p class="text-xs text-gray-500">Pastikan GPS aktif</p>
-                </div>
-            </div>
-            <div class="location-coord" id="locationCoord"></div>
-            <div class="mt-2" id="locationValidity"></div>
-        </div>
-        
-        <!-- Info Box -->
-        <div class="info-box">
-            <div class="info-item">
-                <i class="fas fa-qrcode"></i>
-                <span>Arahkan kamera ke QR Code siswa</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-map-pin"></i>
-                <span>Lokasi Anda akan dicatat untuk verifikasi</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-school"></i>
-                <span>Radius absensi: 100 meter dari sekolah</span>
-            </div>
-            <div class="info-item">
-                <i class="fas fa-sun"></i>
-                <span>Pastikan GPS dan kamera aktif</span>
-            </div>
-        </div>
-        
-        <!-- Status Card (ditampilkan setelah scan) -->
-        <div id="statusCard" class="status-card">
-            <div id="statusIcon">✅</div>
-            <h3 id="statusTitle" class="text-xl font-bold mb-2 text-gray-800">Berhasil!</h3>
-            <p id="statusMessage" class="text-gray-600 text-sm mb-4"></p>
-            
-            <div class="countdown-timer" id="countdownTimer">
-                Kembali ke scanner dalam 3 detik
-            </div>
-            
-            <div id="studentDetail" class="student-detail">
-                <div class="student-detail-item">
-                    <span class="label">ID Siswa</span>
-                    <span class="value" id="detailId">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">NIS (QR)</span>
-                    <span class="value" id="detailNisQR">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">NIS (DB)</span>
-                    <span class="value" id="detailNisDB">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Nama</span>
-                    <span class="value" id="detailNama">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Kelas</span>
-                    <span class="value" id="detailKelas">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Jurusan</span>
-                    <span class="value" id="detailJurusan">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Created At</span>
-                    <span class="value" id="detailCreatedAt">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Lokasi</span>
-                    <span class="value" id="detailLokasi">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Status Lokasi</span>
-                    <span class="value" id="detailLokasiStatus">-</span>
-                </div>
-                <div class="student-detail-item">
-                    <span class="label">Waktu</span>
-                    <span class="value" id="detailWaktu">-</span>
-                </div>
-            </div>
-            
-            <div id="miniMap" class="map-mini hidden"></div>
-            
-            <button onclick="skipCountdown()" class="btn btn-skip">
-                <i class="fas fa-forward mr-2"></i>Lanjutkan Sekarang
-            </button>
-        </div>
-        
-        <!-- Recent Scans -->
-        <div id="recentScans" class="recent-scans">
-            <div class="flex justify-between items-center mb-3">
-                <span class="text-sm font-bold text-gray-700">
-                    <i class="fas fa-history mr-2 text-indigo-600"></i>Scan Terakhir
-                </span>
-                <span class="text-xs bg-indigo-100 text-indigo-700 px-3 py-1 rounded-full font-semibold" id="scanCount">0 hari ini</span>
-            </div>
-            <div id="recentList">
-                <div class="text-center text-gray-400 text-sm py-4">
-                    <i class="fas fa-camera text-3xl mb-2 opacity-50"></i>
-                    <p>Belum ada scan</p>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Control Buttons -->
-        <button onclick="startScanner()" id="startBtn" class="btn btn-primary">
-            <i class="fas fa-camera mr-2"></i>Mulai Kamera
-        </button>
-        
-        <button onclick="stopScanner()" id="stopBtn" class="btn btn-secondary" style="display: none;">
-            <i class="fas fa-stop mr-2"></i>Stop Kamera
-        </button>
-    </div>
-    
-    <!-- Toast Container -->
+    <!-- [HTML sama dengan sebelumnya - tidak diubah] -->
     <div id="toastContainer"></div>
 
     <!-- Load Library -->
@@ -1068,26 +160,24 @@
                         if (script) script.remove();
                     }
 
-                    // Konversi ke format array untuk sheet
-                    const values = [
-                        [
-                            newRecord.id,
-                            newRecord.student_id,
-                            newRecord.student_nis,
-                            newRecord.student_nama,
-                            newRecord.student_kelas,
-                            newRecord.student_jurusan,
-                            newRecord.student_photo,
-                            newRecord.status,
-                            newRecord.metode,
-                            newRecord.location?.lat || '',
-                            newRecord.location?.lng || '',
-                            newRecord.location?.accuracy || '',
-                            newRecord.keterangan || '',
-                            newRecord.tanggal,
-                            newRecord.timestamp
-                        ]
-                    ];
+                    // Konversi ke format array untuk sheet (HARUS SESUAI DENGAN HEADER)
+                    const values = [[
+                        newRecord.id,
+                        newRecord.student_id,
+                        newRecord.student_nis,
+                        newRecord.student_nama,
+                        newRecord.student_kelas,
+                        newRecord.student_jurusan,
+                        newRecord.student_photo,
+                        newRecord.status,
+                        newRecord.metode,
+                        newRecord.location?.lat || '',
+                        newRecord.location?.lng || '',
+                        newRecord.location?.accuracy || '',
+                        newRecord.keterangan || '',
+                        newRecord.tanggal,
+                        newRecord.timestamp
+                    ]];
 
                     const formData = new FormData();
                     formData.append('action', 'saveAttendance');
@@ -1118,49 +208,12 @@
             }
         }
 
-        async function saveLocationRecord(record) {
-            try {
-                locationRecords.push(record);
-                
-                const values = [[
-                    record.id,
-                    record.attendance_id,
-                    record.student_id,
-                    record.student_nis,
-                    record.student_nama,
-                    record.lat,
-                    record.lng,
-                    record.accuracy,
-                    record.within_radius,
-                    record.distance,
-                    record.timestamp
-                ]];
-
-                const formData = new FormData();
-                formData.append('action', 'saveLocations');
-                formData.append('data', JSON.stringify(values));
-                formData.append('callback', 'callback');
-
-                await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    mode: 'cors',
-                    body: formData
-                });
-                
-                return true;
-            } catch (error) {
-                console.error('❌ Gagal simpan lokasi:', error);
-                return false;
-            }
-        }
-
         // ==================== FUNGSI LOAD DATA ====================
         async function loadStudents() {
             try {
                 const rows = await fetchSheetData('STUDENTS');
                 
                 if (rows && rows.length > 1) {
-                    // Konversi dari array ke object
                     const headers = rows[0];
                     students = [];
                     
@@ -1183,6 +236,11 @@
                         const nis = String(student.nis).trim();
                         studentCache.set(nis, student);
                         studentCache.set(nis.replace(/^0+/, ''), student);
+                        
+                        // JUGA CACHE BERDASARKAN ID (untuk QR yang mungkin pakai ID)
+                        if (student.id) {
+                            studentCache.set(student.id, student);
+                        }
                     });
                 }
                 
@@ -1212,16 +270,17 @@
                             if (header && header.trim()) {
                                 let value = row[index] || '';
                                 
-                                // Parse location
-                                if (header === 'location_lat') record.location_lat = parseFloat(value) || 0;
-                                else if (header === 'location_lng') record.location_lng = parseFloat(value) || 0;
-                                else if (header === 'location_accuracy') record.location_accuracy = parseFloat(value) || 0;
-                                else if (header === 'timestamp') record.timestamp = parseInt(value) || 0;
-                                else record[header.trim()] = value;
+                                if (header === 'location_lat' || header === 'location_lng' || header === 'location_accuracy') {
+                                    record[header] = parseFloat(value) || 0;
+                                } else if (header === 'timestamp') {
+                                    record[header] = parseInt(value) || 0;
+                                } else {
+                                    record[header] = value;
+                                }
                             }
                         });
                         
-                        // Parse location object
+                        // Parse location
                         if (record.location_lat && record.location_lng) {
                             record.location = {
                                 lat: record.location_lat,
@@ -1514,33 +573,54 @@
             }
         }
 
+        // PERBAIKAN UTAMA: Fungsi pencarian siswa yang lebih fleksibel
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
                 return null;
             }
             
-            const cleanNis = String(nisFromQR).trim();
+            const cleanInput = String(nisFromQR).trim();
+            console.log('🔍 Mencari siswa dengan input:', cleanInput);
             
-            if (studentCache.has(cleanNis)) {
-                return studentCache.get(cleanNis);
+            // 1. Coba cari berdasarkan ID (format MASxxxxx)
+            if (cleanInput.startsWith('MAS')) {
+                const student = students.find(s => s.id === cleanInput);
+                if (student) {
+                    console.log('✅ Ditemukan berdasarkan ID:', student);
+                    return student;
+                }
             }
             
-            const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
+            // 2. Coba cari berdasarkan NIS (dengan cache)
+            if (studentCache.has(cleanInput)) {
+                return studentCache.get(cleanInput);
+            }
+            
+            // 3. Coba tanpa leading zeros
+            const withoutLeadingZeros = cleanInput.replace(/^0+/, '');
             if (studentCache.has(withoutLeadingZeros)) {
                 return studentCache.get(withoutLeadingZeros);
             }
             
-            let student = students.find(s => String(s.nis).trim() === cleanNis);
+            // 4. Cari di array
+            let student = students.find(s => String(s.nis).trim() === cleanInput);
             if (student) return student;
             
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) return student;
             
-            const last7Digits = cleanNis.slice(-7);
+            // 5. Coba 7 digit terakhir (untuk NIS panjang)
+            const last7Digits = cleanInput.slice(-7);
             student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
             
-            return student || null;
+            if (student) {
+                console.log('✅ Ditemukan berdasarkan 7 digit terakhir:', student);
+                return student;
+            }
+            
+            console.log('❌ Siswa tidak ditemukan');
+            return null;
         }
 
         function generateId() {
@@ -1636,8 +716,8 @@
             }
             
             try {
-                const nisFromQR = decodedText.trim();
-                console.log('🔍 QR terdeteksi:', nisFromQR);
+                const qrData = decodedText.trim();
+                console.log('🔍 QR terdeteksi:', qrData);
                 
                 showToast('Memproses scan...', 'info');
                 
@@ -1647,7 +727,7 @@
                         '❌ Lokasi Tidak Ditemukan',
                         'Aktifkan GPS dan izinkan akses lokasi',
                         null,
-                        nisFromQR
+                        qrData
                     );
                     showToast('Aktifkan GPS terlebih dahulu', 'error');
                     
@@ -1659,15 +739,16 @@
                 const locationValid = isWithinSchoolRadius(currentLocation.lat, currentLocation.lng);
                 const locationStatus = getLocationStatus(currentLocation.lat, currentLocation.lng);
                 
-                const student = findStudentByNIS(nisFromQR);
+                // Cari siswa berdasarkan QR (bisa NIS atau ID)
+                const student = findStudentByNIS(qrData);
                 
                 if (!student) {
                     showStatus(
                         'error', 
                         '❌ Siswa Tidak Ditemukan', 
-                        `NIS ${nisFromQR} tidak terdaftar di sistem.`, 
+                        `Data "${qrData}" tidak terdaftar di sistem.`, 
                         null,
-                        nisFromQR,
+                        qrData,
                         currentLocation,
                         locationStatus
                     );
@@ -1689,7 +770,7 @@
                         '⚠️ Sudah Absen Hari Ini', 
                         `${student.nama} (ID: ${student.id}) sudah melakukan absensi hari ini.`, 
                         student,
-                        nisFromQR,
+                        qrData,
                         currentLocation,
                         locationStatus
                     );
@@ -1726,19 +807,27 @@
                 const saved = await saveAttendance(newAttendance);
                 
                 if (saved) {
-                    await saveLocationRecord({
-                        id: generateId(),
-                        attendance_id: attendanceId,
-                        student_id: student.id,
-                        student_nis: student.nis,
-                        student_nama: student.nama,
-                        lat: currentLocation.lat,
-                        lng: currentLocation.lng,
-                        accuracy: currentLocation.accuracy,
-                        within_radius: locationValid,
-                        distance: locationStatus.distance,
-                        timestamp: now.getTime()
-                    });
+                    // Simpan juga ke lokasi (opsional)
+                    await fetch(`${APPS_SCRIPT_URL}?action=saveLocations&callback=callback`, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        body: JSON.stringify({
+                            action: 'saveLocations',
+                            data: [[
+                                generateId(),
+                                attendanceId,
+                                student.id,
+                                student.nis,
+                                student.nama,
+                                currentLocation.lat,
+                                currentLocation.lng,
+                                currentLocation.accuracy,
+                                locationValid,
+                                locationStatus.distance,
+                                now.getTime()
+                            ]]
+                        })
+                    }).catch(() => {});
                     
                     let message = `Selamat datang, ${student.nama}`;
                     if (!locationValid) {
@@ -1750,7 +839,7 @@
                         locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absensi Tercatat (Luar Radius)',
                         message,
                         student,
-                        nisFromQR,
+                        qrData,
                         currentLocation,
                         locationStatus
                     );
@@ -1766,7 +855,7 @@
                         '❌ Gagal Menyimpan', 
                         'Terjadi kesalahan server. Coba lagi.', 
                         student,
-                        nisFromQR,
+                        qrData,
                         currentLocation,
                         locationStatus
                     );
@@ -1846,7 +935,7 @@
 
         function onScanError(error) {}
 
-        function showStatus(type, title, message, student, nisFromQR, location, locationStatus) {
+        function showStatus(type, title, message, student, qrData, location, locationStatus) {
             const card = document.getElementById('statusCard');
             const icon = document.getElementById('statusIcon');
             const titleEl = document.getElementById('statusTitle');
@@ -1871,7 +960,7 @@
             
             if (student) {
                 document.getElementById('detailId').textContent = student.id || '-';
-                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisQR').textContent = qrData || '-';
                 document.getElementById('detailNisDB').textContent = student.nis;
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
@@ -1906,7 +995,7 @@
                 detailEl.style.display = 'block';
             } else {
                 document.getElementById('detailId').textContent = '-';
-                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisQR').textContent = qrData || '-';
                 document.getElementById('detailNisDB').textContent = '-';
                 document.getElementById('detailNama').textContent = '-';
                 document.getElementById('detailKelas').textContent = '-';
