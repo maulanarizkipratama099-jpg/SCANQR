@@ -10,7 +10,717 @@
     <!-- Google Maps API -->
     <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&libraries=places"></script>
     <style>
-        /* ... (style tetap sama) ... */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: linear-gradient(145deg, #0B1120 0%, #1A1F35 50%, #2D1B4A 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 16px;
+        }
+
+        /* Opening Animation */
+        .opening-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(145deg, #0B1120 0%, #1A1F35 50%, #2D1B4A 100%);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.8s ease, visibility 0.8s ease;
+        }
+
+        .opening-content {
+            text-align: center;
+            animation: floatAnimation 2s ease-in-out infinite;
+        }
+
+        @keyframes floatAnimation {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-20px); }
+        }
+
+        .logo-circle {
+            width: 150px;
+            height: 150px;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border: 3px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            margin: 0 auto 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1);
+            animation: pulseGlow 2s ease-in-out infinite;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 0 0 0 2px rgba(255, 255, 255, 0.1); }
+            50% { box-shadow: 0 30px 60px rgba(79, 70, 229, 0.5), 0 0 0 4px rgba(255, 255, 255, 0.3); }
+        }
+
+        .logo-circle img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .logo-circle i {
+            font-size: 70px;
+            color: rgba(255, 255, 255, 0.5);
+        }
+
+        .opening-title {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #ffffff 0%, #c7d2fe 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 15px;
+        }
+
+        .opening-subtitle {
+            color: rgba(255, 255, 255, 0.6);
+            font-size: 14px;
+            margin-bottom: 30px;
+        }
+
+        .progress-bar {
+            width: 280px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px auto;
+        }
+
+        .progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #6366f1, #a855f7, #ec4899);
+            border-radius: 10px;
+            animation: loading 2s ease-in-out forwards;
+        }
+
+        @keyframes loading {
+            0% { width: 0%; }
+            20% { width: 30%; }
+            50% { width: 60%; }
+            80% { width: 90%; }
+            100% { width: 100%; }
+        }
+
+        /* Login Container */
+        .login-container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 40px 28px;
+            width: 100%;
+            max-width: 400px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            display: none;
+        }
+
+        .login-container.visible {
+            display: block;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header .logo-small {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            border-radius: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+
+        .login-header .logo-small i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .login-header h2 {
+            font-size: 24px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+        }
+
+        .login-header p {
+            color: #6b7280;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 600;
+            color: #374151;
+            margin-bottom: 8px;
+        }
+
+        .input-group {
+            position: relative;
+        }
+
+        .input-group i:not(.password-toggle) {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            font-size: 18px;
+            pointer-events: none;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 16px 50px 16px 50px;
+            border: 2px solid #e5e7eb;
+            border-radius: 30px;
+            font-size: 15px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .input-group input::placeholder {
+            color: #9ca3af;
+            font-size: 14px;
+        }
+
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            cursor: pointer;
+            color: #9ca3af;
+            font-size: 18px;
+            z-index: 10;
+            padding: 8px;
+            background: transparent;
+            transition: all 0.2s ease;
+        }
+
+        .password-toggle:hover {
+            color: #4f46e5;
+        }
+
+        .btn-login {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+            margin-top: 10px;
+        }
+
+        .btn-login:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
+        }
+
+        .btn-login i {
+            margin-right: 8px;
+        }
+
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #6b7280;
+            font-size: 13px;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 40px;
+            padding: 28px;
+            width: 100%;
+            max-width: 500px;
+            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            animation: fadeInUp 0.8s ease-out;
+            display: none;
+            position: relative;
+        }
+
+        .container.visible {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+            padding-right: 70px;
+        }
+        
+        .header h1 {
+            font-size: 28px;
+            font-weight: 800;
+            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 6px;
+            letter-spacing: -0.5px;
+        }
+        
+        .header p {
+            color: #6b7280;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .scanner-container {
+            background: #1f2937;
+            border-radius: 32px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            border: 2px solid rgba(79, 70, 229, 0.3);
+            box-shadow: 0 15px 30px -10px rgba(0, 0, 0, 0.3);
+        }
+        
+        #qr-reader {
+            width: 100%;
+            border: none !important;
+        }
+        
+        #qr-reader video {
+            border-radius: 32px !important;
+        }
+        
+        .info-box {
+            background: linear-gradient(145deg, #f0f9ff, #e0f2fe);
+            border-radius: 28px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border: 1px solid rgba(79, 70, 229, 0.2);
+        }
+        
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 8px 0;
+            color: #1e293b;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        
+        .info-item i {
+            width: 24px;
+            height: 24px;
+            background: white;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #4f46e5;
+            font-size: 14px;
+            box-shadow: 0 4px 6px -1px rgba(79, 70, 229, 0.2);
+        }
+        
+        .location-status {
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3b82f6;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            display: none;
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .location-status.visible {
+            display: block;
+            animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .location-coord {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            background: #f1f5f9;
+            padding: 6px 12px;
+            border-radius: 30px;
+            margin-top: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .location-badge {
+            padding: 6px 12px;
+            border-radius: 30px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .location-valid {
+            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
+            color: #059669;
+            border: 1px solid #05966933;
+        }
+        
+        .location-invalid {
+            background: linear-gradient(145deg, #fee2e2, #fecaca);
+            color: #dc2626;
+            border: 1px solid #dc262633;
+        }
+        
+        .status-card {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            text-align: center;
+            box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.2);
+            display: none;
+            border: 1px solid #e5e7eb;
+            margin-bottom: 20px;
+        }
+        
+        .status-card.success {
+            border-left: 4px solid #10b981;
+        }
+        
+        .status-card.error {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .status-card.warning {
+            border-left: 4px solid #f59e0b;
+        }
+
+        .countdown-timer {
+            font-size: 16px;
+            font-weight: 700;
+            color: #4f46e5;
+            background: #e0e7ff;
+            padding: 8px 16px;
+            border-radius: 30px;
+            display: inline-block;
+            margin-top: 10px;
+        }
+
+        #statusIcon {
+            width: 70px;
+            height: 70px;
+            border-radius: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 36px;
+            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+            box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .student-detail {
+            background: linear-gradient(145deg, #f9fafb, #f3f4f6);
+            border-radius: 20px;
+            padding: 20px;
+            margin: 16px 0;
+            text-align: left;
+            border: 1px solid #e5e7eb;
+        }
+        
+        .student-detail-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px dashed #d1d5db;
+        }
+        
+        .student-detail-item:last-child {
+            border-bottom: none;
+        }
+        
+        .label {
+            color: #6b7280;
+            font-weight: 600;
+            font-size: 13px;
+        }
+        
+        .value {
+            font-weight: 700;
+            color: #111827;
+            font-size: 13px;
+        }
+        
+        .btn {
+            padding: 16px 28px;
+            border-radius: 40px;
+            font-weight: 700;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            width: 100%;
+            margin: 8px 0;
+            letter-spacing: 0.3px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #4b5563;
+            border: 2px solid #e5e7eb;
+        }
+        
+        .btn-secondary:hover {
+            background: #f9fafb;
+            border-color: #4f46e5;
+        }
+        
+        .btn-skip {
+            background: white;
+            color: #4f46e5;
+            border: 2px solid #4f46e5;
+            margin-top: 10px;
+        }
+        
+        .btn-skip:hover {
+            background: #4f46e5;
+            color: white;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            left: 30px;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 18px 25px;
+            border-radius: 50px;
+            color: white;
+            z-index: 9999;
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 20px 30px -10px rgba(0, 0, 0, 0.3);
+            font-weight: 600;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .toast.success { background: linear-gradient(145deg, #10b981, #059669); }
+        .toast.error { background: linear-gradient(145deg, #ef4444, #dc2626); }
+        .toast.info { background: linear-gradient(145deg, #3b82f6, #2563eb); }
+        .toast.warning { background: linear-gradient(145deg, #f59e0b, #d97706); }
+        
+        @keyframes slideUp {
+            from {
+                transform: translateY(100%) scale(0.8);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0) scale(1);
+                opacity: 1;
+            }
+        }
+        
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4f46e5;
+            border-right: 4px solid #7c3aed;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s cubic-bezier(0.68, -0.55, 0.265, 1.55) infinite;
+            margin: 20px auto;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .recent-scans {
+            margin-top: 24px;
+            max-height: 250px;
+            overflow-y: auto;
+            border-radius: 24px;
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(10px);
+            padding: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        .scan-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+            font-size: 13px;
+            background: white;
+            border-radius: 16px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .scan-item:last-child {
+            margin-bottom: 0;
+        }
+        
+        .scan-time {
+            color: #9ca3af;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+        .badge {
+            padding: 4px 10px;
+            border-radius: 30px;
+            font-size: 10px;
+            font-weight: 700;
+        }
+        
+        .badge-success {
+            background: linear-gradient(145deg, #d1fae5, #a7f3d0);
+            color: #065f46;
+        }
+        
+        .badge-location {
+            background: linear-gradient(145deg, #e0e7ff, #c7d2fe);
+            color: #4f46e5;
+        }
+        
+        .map-mini {
+            width: 100%;
+            height: 150px;
+            border-radius: 20px;
+            margin-top: 12px;
+            border: 2px solid #4f46e5;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            border-radius: 10px;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            padding: 8px 16px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            z-index: 100;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .auto-scan-indicator {
+            text-align: center;
+            font-size: 12px;
+            color: #4f46e5;
+            margin-top: 10px;
+            animation: pulse 2s infinite;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
     </style>
 </head>
 <body>
@@ -30,8 +740,52 @@
         </div>
     </div>
 
-    <!-- Main Container (LANGSUNG TANPA LOGIN) -->
+    <!-- Login Container -->
+    <div id="loginContainer" class="login-container">
+        <div class="login-header">
+            <div class="logo-small">
+                <i class="fas fa-user-shield"></i>
+            </div>
+            <h2>LOGIN ADMIN</h2>
+            <p>MAS IBNU HUSAIN</p>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label>Username</label>
+                <div class="input-group">
+                    <i class="fas fa-user"></i>
+                    <input type="text" id="username" placeholder="Masukkan username" autocomplete="off">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Password</label>
+                <div class="input-group">
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Masukkan password" autocomplete="off">
+                    <i class="fas fa-eye password-toggle" onclick="togglePassword()" id="togglePassword"></i>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i>
+                MASUK
+            </button>
+        </form>
+
+        <div class="login-footer">
+            <i class="fas fa-shield-alt mr-1"></i> Sistem Absensi QR Code
+        </div>
+    </div>
+
+    <!-- Main Container -->
     <div id="mainContainer" class="container">
+        <!-- Logout Button -->
+        <button onclick="handleLogout()" class="logout-btn">
+            <i class="fas fa-sign-out-alt mr-1"></i> Logout
+        </button>
+
         <div class="header">
             <h1>📱 ABSENSI QR CODE</h1>
             <p>MAS IBNU HUSAIN</p>
@@ -76,6 +830,10 @@
                 <i class="fas fa-school"></i>
                 <span>Radius absensi: 100 meter dari sekolah</span>
             </div>
+            <div class="info-item">
+                <i class="fas fa-sun"></i>
+                <span>Pastikan GPS dan kamera aktif</span>
+            </div>
         </div>
         
         <!-- Status Card (ditampilkan setelah scan) -->
@@ -90,12 +848,12 @@
             
             <div id="studentDetail" class="student-detail">
                 <div class="student-detail-item">
-                    <span class="label">ID Siswa</span>
-                    <span class="value" id="detailId">-</span>
+                    <span class="label">NIS (QR)</span>
+                    <span class="value" id="detailNisQR">-</span>
                 </div>
                 <div class="student-detail-item">
-                    <span class="label">NIS</span>
-                    <span class="value" id="detailNis">-</span>
+                    <span class="label">NIS (DB)</span>
+                    <span class="value" id="detailNisDB">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Nama</span>
@@ -122,6 +880,8 @@
                     <span class="value" id="detailWaktu">-</span>
                 </div>
             </div>
+            
+            <div id="miniMap" class="map-mini hidden"></div>
             
             <button onclick="skipCountdown()" class="btn btn-skip">
                 <i class="fas fa-forward mr-2"></i>Lanjutkan Sekarang
@@ -160,8 +920,16 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // ==================== KONFIGURASI ====================
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
+        // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
+        // GANTI URL INI DENGAN URL WEB APP ANDA!
+        const APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec';
+        
+        // Sheet names
+        const SHEETS = {
+            SISWA: 'siswa',
+            ABSENSI: 'absensi',
+            LOKASI: 'lokasi'
+        };
 
         // KONSTANTA LOKASI SEKOLAH
         const SCHOOL_LOCATION = {
@@ -176,99 +944,191 @@
         let isScanning = false;
         let students = [];
         let attendanceRecords = [];
-        let currentLocation = null;
-        let watchId = null;
+        let locationRecords = [];
         let todayScans = [];
         let isLoading = false;
+        let currentLocation = null;
+        let watchId = null;
+        let configData = { school_logo: '' };
         let autoResumeTimeout = null;
         let countdownInterval = null;
         let countdownSeconds = 3;
+        let studentCache = new Map();
 
-        // ==================== FUNGSI LOAD DATA ====================
-        async function loadStudents() {
-            return new Promise((resolve) => {
-                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+        // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
+
+        // GET data dari Google Sheets via Apps Script
+        async function fetchSheetData(sheetName) {
+            try {
+                const url = `${APPS_SCRIPT_URL}?action=getAll&sheet=${sheetName}&t=${Date.now()}`;
+                const response = await fetch(url);
                 
-                window[callbackName] = function(response) {
-                    cleanup();
-                    if (response && response.success) {
-                        const rows = response.data || [];
-                        if (rows.length > 1) {
-                            const headers = rows[0];
-                            students = [];
-                            for (let i = 1; i < rows.length; i++) {
-                                const row = rows[i];
-                                if (row.length === 0) continue;
-                                const student = {};
-                                headers.forEach((h, idx) => { if(h) student[h.trim()] = row[idx] || ''; });
-                                students.push(student);
-                            }
-                        }
-                    }
-                    resolve(students);
-                };
-
-                const timeout = setTimeout(() => { cleanup(); resolve([]); }, 10000);
-                const script = document.createElement('script');
-                script.id = callbackName;
-                script.src = `${APPS_SCRIPT_URL}?action=getStudents&callback=${callbackName}`;
-                script.onerror = () => { cleanup(); resolve([]); };
-                document.body.appendChild(script);
-
-                function cleanup() {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    const s = document.getElementById(callbackName);
-                    if(s) s.remove();
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data || [];
+                } else {
+                    console.error(`Error fetching ${sheetName}:`, result.error);
+                    showToast(`Gagal memuat data ${sheetName}`, 'error');
+                    return [];
+                }
+            } catch (error) {
+                console.error(`Error fetching ${sheetName}:`, error);
+                showToast(`Gagal memuat data: ${error.message}`, 'error');
+                return [];
+            }
         }
 
-        async function loadAttendance() {
-            return new Promise((resolve) => {
-                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
-                
-                window[callbackName] = function(response) {
-                    cleanup();
-                    if (response && response.success) {
-                        const rows = response.data || [];
-                        if (rows.length > 1) {
-                            const headers = rows[0];
-                            attendanceRecords = [];
-                            for (let i = 1; i < rows.length; i++) {
-                                const row = rows[i];
-                                if (row.length === 0) continue;
-                                const record = {};
-                                headers.forEach((h, idx) => { if(h) record[h.trim()] = row[idx] || ''; });
-                                if (record.location_lat && record.location_lng) {
-                                    record.location = {
-                                        lat: parseFloat(record.location_lat) || 0,
-                                        lng: parseFloat(record.location_lng) || 0,
-                                        accuracy: parseFloat(record.location_accuracy) || 0
-                                    };
-                                }
-                                attendanceRecords.push(record);
-                            }
-                        }
-                    }
-                    updateRecentScans();
-                    resolve(attendanceRecords);
+        // POST data ke Google Sheets via Apps Script
+        async function postToSheet(action, sheetName, data, id = null) {
+            try {
+                const payload = {
+                    action: action,
+                    sheet: sheetName,
+                    data: data
                 };
+                
+                if (id) payload.id = id;
+                
+                const response = await fetch(APPS_SCRIPT_URL, {
+                    method: 'POST',
+                    mode: 'no-cors',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(payload)
+                });
+                
+                console.log(`Data sent to ${sheetName} (${action})`);
+                return true;
+                
+            } catch (error) {
+                console.error(`Error posting to ${sheetName}:`, error);
+                showToast(`Gagal menyimpan data: ${error.message}`, 'error');
+                return false;
+            }
+        }
 
-                const timeout = setTimeout(() => { cleanup(); resolve([]); }, 10000);
-                const script = document.createElement('script');
-                script.id = callbackName;
-                script.src = `${APPS_SCRIPT_URL}?action=getAttendance&callback=${callbackName}`;
-                script.onerror = () => { cleanup(); resolve([]); };
-                document.body.appendChild(script);
-
-                function cleanup() {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    const s = document.getElementById(callbackName);
-                    if(s) s.remove();
+        // GET config dari Google Sheets
+        async function fetchConfig() {
+            try {
+                const url = `${APPS_SCRIPT_URL}?action=getConfig&t=${Date.now()}`;
+                const response = await fetch(url);
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}`);
                 }
-            });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.data || {};
+                } else {
+                    console.error('Error fetching config:', result.error);
+                    return {};
+                }
+            } catch (error) {
+                console.error('Error fetching config:', error);
+                return {};
+            }
+        }
+
+        // ==================== FUNGSI OPENING ====================
+        async function loadOpeningLogo() {
+            try {
+                const config = await fetchConfig();
+                configData = config;
+                
+                if (configData.school_logo) {
+                    document.getElementById('openingLogoImage').src = configData.school_logo;
+                    document.getElementById('openingLogoImage').classList.remove('hidden');
+                    document.getElementById('openingLogoIcon').classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Gagal load konfigurasi:', error);
+            }
+        }
+
+        function closeOpening() {
+            setTimeout(() => {
+                document.getElementById('openingOverlay').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('openingOverlay').style.display = 'none';
+                    document.getElementById('loginContainer').classList.add('visible');
+                }, 800);
+            }, 2000);
+        }
+
+        // ==================== FUNGSI LOGIN ====================
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('togglePassword');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('fa-eye');
+                toggleIcon.classList.add('fa-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('fa-eye-slash');
+                toggleIcon.classList.add('fa-eye');
+            }
+        }
+
+        function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (username === 'admin' && password === 'admin123') {
+                showToast('Login berhasil!', 'success');
+                
+                document.getElementById('loginContainer').classList.remove('visible');
+                document.getElementById('mainContainer').classList.add('visible');
+                
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('password').type = 'password';
+                document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+                document.getElementById('togglePassword').classList.add('fa-eye');
+                
+                if (typeof Html5QrcodeScanner !== 'undefined') {
+                    checkCameraAndStart();
+                }
+            } else {
+                showToast('Username atau password salah!', 'error');
+            }
+        }
+
+        function handleLogout() {
+            stopScanner();
+            
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
+            document.getElementById('mainContainer').classList.remove('visible');
+            document.getElementById('loginContainer').classList.add('visible');
+            
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+            document.getElementById('password').type = 'password';
+            document.getElementById('togglePassword').classList.remove('fa-eye-slash');
+            document.getElementById('togglePassword').classList.add('fa-eye');
+            
+            document.getElementById('locationStatus').classList.remove('visible');
+            
+            showToast('Berhasil logout', 'info');
         }
 
         // ==================== FUNGSI LOKASI ====================
@@ -278,38 +1138,54 @@
             const φ2 = lat2 * Math.PI/180;
             const Δφ = (lat2-lat1) * Math.PI/180;
             const Δλ = (lon2-lon1) * Math.PI/180;
+
             const a = Math.sin(Δφ/2) * Math.sin(Δφ/2) +
                     Math.cos(φ1) * Math.cos(φ2) *
                     Math.sin(Δλ/2) * Math.sin(Δλ/2);
             const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+
             return R * c;
         }
 
         function isWithinSchoolRadius(lat, lng) {
             if (!lat || !lng) return false;
-            return calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng) <= SCHOOL_LOCATION.radius;
+            const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
+            return distance <= SCHOOL_LOCATION.radius;
         }
 
         function getLocationStatus(lat, lng) {
             if (!lat || !lng) return { valid: false, text: 'Lokasi tidak diketahui', class: '', distance: null };
+            
             const distance = calculateDistance(lat, lng, SCHOOL_LOCATION.lat, SCHOOL_LOCATION.lng);
             const withinRadius = distance <= SCHOOL_LOCATION.radius;
+            
             return {
                 valid: withinRadius,
-                text: withinRadius ? `✅ Dalam radius (${Math.round(distance)}m)` : `❌ Luar radius (${Math.round(distance)}m)`,
+                text: withinRadius ? `✅ Dalam radius (${Math.round(distance)}m dari sekolah)` : `❌ Luar radius (${Math.round(distance)}m dari sekolah)`,
                 class: withinRadius ? 'location-valid' : 'location-invalid',
                 distance: Math.round(distance)
             };
         }
 
         function startLocationTracking() {
-            if (!navigator.geolocation) { showToast('Browser tidak mendukung GPS', 'error'); return; }
-            const locDiv = document.getElementById('locationStatus');
-            const locText = document.getElementById('locationText');
-            const locCoord = document.getElementById('locationCoord');
-            const locValidity = document.getElementById('locationValidity');
-            locDiv.classList.add('visible');
-            locText.textContent = 'Mendapatkan lokasi...';
+            if (!navigator.geolocation) {
+                showToast('Browser tidak mendukung GPS', 'error');
+                return;
+            }
+
+            const locationDiv = document.getElementById('locationStatus');
+            const locationText = document.getElementById('locationText');
+            const locationCoord = document.getElementById('locationCoord');
+            const locationValidity = document.getElementById('locationValidity');
+
+            locationDiv.classList.add('visible');
+            locationText.textContent = 'Mendapatkan lokasi...';
+
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            };
 
             navigator.geolocation.getCurrentPosition(
                 (position) => {
@@ -319,273 +1195,697 @@
                         accuracy: position.coords.accuracy,
                         timestamp: position.timestamp
                     };
+
                     const status = getLocationStatus(currentLocation.lat, currentLocation.lng);
-                    locText.textContent = `Lokasi: ${status.text}`;
-                    locCoord.innerHTML = `<i class="fas fa-crosshairs mr-1"></i>${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} <span class="text-xs ml-1">±${Math.round(currentLocation.accuracy)}m</span>`;
-                    locValidity.innerHTML = `<span class="location-badge ${status.class}">${status.text}</span>`;
+                    
+                    locationText.textContent = `Lokasi: ${status.text}`;
+                    locationCoord.innerHTML = `
+                        <i class="fas fa-crosshairs mr-1"></i>${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} 
+                        <span class="text-xs ml-1">±${Math.round(currentLocation.accuracy)}m</span>
+                    `;
+                    locationValidity.innerHTML = `
+                        <span class="location-badge ${status.class}">${status.text}</span>
+                    `;
+
+                    showToast('Lokasi terdeteksi', 'success');
                 },
                 (error) => {
+                    console.error('Location error:', error);
                     let errorMsg = 'Gagal mendapatkan lokasi';
                     if (error.code === 1) errorMsg = 'Akses lokasi ditolak';
                     else if (error.code === 2) errorMsg = 'Lokasi tidak tersedia';
-                    else if (error.code === 3) errorMsg = 'Timeout';
-                    locText.textContent = errorMsg;
-                    locCoord.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Periksa GPS';
+                    else if (error.code === 3) errorMsg = 'Timeout mendapatkan lokasi';
+                    
+                    locationText.textContent = errorMsg;
+                    locationCoord.innerHTML = '<i class="fas fa-exclamation-triangle"></i> Periksa pengaturan GPS';
                     showToast(errorMsg, 'error');
                 },
-                { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                options
+            );
+
+            watchId = navigator.geolocation.watchPosition(
+                (position) => {
+                    currentLocation = {
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                        accuracy: position.coords.accuracy,
+                        timestamp: position.timestamp
+                    };
+
+                    const status = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                    
+                    locationText.textContent = `Lokasi: ${status.text}`;
+                    locationCoord.innerHTML = `
+                        <i class="fas fa-crosshairs mr-1"></i>${currentLocation.lat.toFixed(6)}, ${currentLocation.lng.toFixed(6)} 
+                        <span class="text-xs ml-1">±${Math.round(currentLocation.accuracy)}m</span>
+                    `;
+                    locationValidity.innerHTML = `
+                        <span class="location-badge ${status.class}">${status.text}</span>
+                    `;
+                },
+                (error) => {
+                    console.error('Watch position error:', error);
+                },
+                options
             );
         }
 
         function stopLocationTracking() {
-            if (watchId) navigator.geolocation.clearWatch(watchId);
-            watchId = null;
+            if (watchId) {
+                navigator.geolocation.clearWatch(watchId);
+                watchId = null;
+            }
         }
 
-        // ==================== FUNGSI SAVE ABSENSI ====================
-        async function saveAttendance(record) {
-            return new Promise((resolve) => {
-                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+        // ==================== FUNGSI DATABASE ====================
+        async function loadStudents() {
+            try {
+                const data = await fetchSheetData(SHEETS.SISWA);
+                students = data || [];
                 
-                window[callbackName] = function(response) {
-                    cleanup();
-                    if (response && response.success) {
-                        attendanceRecords.push(record);
-                        updateRecentScans();
-                        resolve(true);
-                    } else {
-                        resolve(false);
-                    }
-                };
-
-                const timeout = setTimeout(() => { cleanup(); resolve(false); }, 15000);
-                const values = [[
-                    record.id, record.student_id, record.student_nis, record.student_nama,
-                    record.student_kelas, record.student_jurusan, record.student_photo || '',
-                    record.status, record.metode, record.location?.lat || '', record.location?.lng || '',
-                    record.location?.accuracy || '', record.keterangan || '', record.tanggal, record.timestamp
-                ]];
+                studentCache.clear();
+                students.forEach(student => {
+                    const nis = String(student.nis).trim();
+                    studentCache.set(nis, student);
+                    studentCache.set(nis.replace(/^0+/, ''), student);
+                });
                 
-                const formData = new FormData();
-                formData.append('action', 'saveAttendance');
-                formData.append('data', JSON.stringify(values));
-                formData.append('callback', callbackName);
+                console.log('📚 Loaded students:', students.length);
+                return students;
+            } catch (error) {
+                console.error('❌ Gagal load siswa:', error);
+                showToast('Gagal memuat data siswa', 'error');
+                return [];
+            }
+        }
 
-                fetch(APPS_SCRIPT_URL, { method: 'POST', mode: 'cors', body: formData })
-                    .then(r => r.text()).then(t => eval(t))
-                    .catch(() => { cleanup(); resolve(false); });
+        async function loadAttendance() {
+            try {
+                const data = await fetchSheetData(SHEETS.ABSENSI);
+                attendanceRecords = data || [];
+                console.log('📋 Loaded attendance:', attendanceRecords.length);
+                
+                updateRecentScans();
+                
+                return attendanceRecords;
+            } catch (error) {
+                console.error('❌ Gagal load absensi:', error);
+                return [];
+            }
+        }
 
-                function cleanup() {
-                    clearTimeout(timeout);
-                    delete window[callbackName];
-                    const s = document.getElementById(callbackName);
-                    if(s) s.remove();
+        async function loadLocationRecords() {
+            try {
+                const data = await fetchSheetData(SHEETS.LOKASI);
+                locationRecords = data || [];
+                
+                return locationRecords;
+            } catch (error) {
+                console.error('❌ Gagal load lokasi:', error);
+                return [];
+            }
+        }
+
+        async function saveAttendance(newRecord) {
+            try {
+                showToast('Menyimpan ke server...', 'info', 5000);
+                
+                // Append ke Google Sheets
+                const rowData = [
+                    newRecord.id || '',
+                    newRecord.student_id || '',
+                    newRecord.student_nis || '',
+                    newRecord.student_nama || '',
+                    newRecord.student_kelas || '',
+                    newRecord.student_jurusan || '',
+                    newRecord.student_photo || '',
+                    newRecord.status || '',
+                    newRecord.metode || '',
+                    newRecord.keterangan || '',
+                    newRecord.tanggal || '',
+                    newRecord.timestamp || '',
+                    JSON.stringify(newRecord.location) || ''
+                ];
+                
+                const success = await postToSheet('append', SHEETS.ABSENSI, rowData);
+                
+                if (success) {
+                    attendanceRecords.push(newRecord);
+                    console.log('✅ Absensi tersimpan:', newRecord);
+                    updateRecentScans();
+                    return true;
+                } else {
+                    return false;
                 }
-            });
+                
+            } catch (error) {
+                console.error('❌ Gagal simpan absensi:', error);
+                showToast('Gagal menyimpan ke server', 'error');
+                return false;
+            }
         }
 
-        // ==================== FUNGSI SCANNER ====================
+        async function saveLocationRecord(record) {
+            try {
+                const rowData = [
+                    record.id || '',
+                    record.attendance_id || '',
+                    record.student_id || '',
+                    record.student_nis || '',
+                    record.student_nama || '',
+                    record.lat || '',
+                    record.lng || '',
+                    record.accuracy || '',
+                    record.within_radius || false,
+                    record.distance || '',
+                    record.timestamp || ''
+                ];
+                
+                await postToSheet('append', SHEETS.LOKASI, rowData);
+                return true;
+            } catch (error) {
+                console.error('❌ Gagal simpan lokasi:', error);
+                return false;
+            }
+        }
+
         function findStudentByNIS(nisFromQR) {
-            if (!students || students.length === 0) return null;
+            if (!students || students.length === 0) {
+                console.log('⚠️ Data siswa kosong');
+                return null;
+            }
+            
             const cleanNis = String(nisFromQR).trim();
-            // Coba exact match
+            
+            if (studentCache.has(cleanNis)) {
+                return studentCache.get(cleanNis);
+            }
+            
+            const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
+            if (studentCache.has(withoutLeadingZeros)) {
+                return studentCache.get(withoutLeadingZeros);
+            }
+            
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) return student;
-            // Coba tanpa leading zeros
-            const withoutZeros = cleanNis.replace(/^0+/, '');
-            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutZeros);
+            
+            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
+            if (student) return student;
+            
+            const last7Digits = cleanNis.slice(-7);
+            student = students.find(s => String(s.nis).endsWith(last7Digits) || String(s.nis).includes(last7Digits));
+            
             return student || null;
         }
 
-        async function onScanSuccess(decodedText) {
-            if (isLoading) { showToast('Memproses...', 'warning'); return; }
-            isLoading = true;
-            if (html5QrcodeScanner && isScanning) await html5QrcodeScanner.pause();
+        function generateId() {
+            return Date.now().toString(36) + Math.random().toString(36).substr(2, 9);
+        }
 
+        function formatDate(date) {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const day = String(date.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        }
+
+        function formatTime(date) {
+            return date.toLocaleTimeString('id-ID', {
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit'
+            });
+        }
+
+        function updateRecentScans() {
+            const today = formatDate(new Date());
+            todayScans = attendanceRecords
+                .filter(r => r.tanggal === today && r.metode === 'qr')
+                .sort((a, b) => b.timestamp - a.timestamp)
+                .slice(0, 5);
+            
+            const listEl = document.getElementById('recentList');
+            const countEl = document.getElementById('scanCount');
+            
+            if (todayScans.length === 0) {
+                listEl.innerHTML = '<div class="text-center text-gray-400 text-sm py-4"><i class="fas fa-camera text-3xl mb-2 opacity-50"></i><p>Belum ada scan hari ini</p></div>';
+                countEl.textContent = '0 hari ini';
+                return;
+            }
+            
+            countEl.textContent = `${todayScans.length} hari ini`;
+            
+            listEl.innerHTML = todayScans.map(scan => {
+                const waktu = new Date(scan.timestamp).toLocaleTimeString('id-ID', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
+                
+                const locationValid = scan.location && isWithinSchoolRadius(scan.location.lat, scan.location.lng);
+                
+                return `
+                    <div class="scan-item">
+                        <div>
+                            <div class="font-bold text-sm">${scan.student_nama}</div>
+                            <div class="text-xs text-gray-500">${scan.student_kelas}</div>
+                            ${scan.location ? `
+                                <div class="text-xs ${locationValid ? 'text-green-600' : 'text-red-600'} font-semibold mt-1">
+                                    <i class="fas fa-map-pin mr-1"></i>${locationValid ? 'Dalam radius' : 'Luar radius'}
+                                </div>
+                            ` : ''}
+                        </div>
+                        <div class="text-right">
+                            <div class="text-xs font-bold">${waktu}</div>
+                            <span class="badge badge-success mt-1 inline-block">QR</span>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        // ==================== FUNGSI SCANNER ====================
+        async function onScanSuccess(decodedText) {
+            if (isLoading) {
+                showToast('Sedang memproses scan sebelumnya...', 'warning');
+                return;
+            }
+            
+            isLoading = true;
+            
+            if (html5QrcodeScanner && isScanning) {
+                try {
+                    await html5QrcodeScanner.pause();
+                } catch (e) {
+                    console.error('Pause scanner error:', e);
+                }
+            }
+            
             try {
                 const nisFromQR = decodedText.trim();
+                console.log('🔍 QR terdeteksi:', nisFromQR);
+                
+                showToast('Memproses scan...', 'info');
+                
                 if (!currentLocation) {
-                    showStatus('error', '❌ Lokasi Tidak Ditemukan', 'Aktifkan GPS', null, nisFromQR);
+                    showStatus(
+                        'error',
+                        '❌ Lokasi Tidak Ditemukan',
+                        'Aktifkan GPS dan izinkan akses lokasi',
+                        null,
+                        nisFromQR
+                    );
+                    showToast('Aktifkan GPS terlebih dahulu', 'error');
+                    
                     scheduleScannerResume();
+                    isLoading = false;
                     return;
                 }
-
-                const student = findStudentByNIS(nisFromQR);
-                if (!student) {
-                    showStatus('error', '❌ Siswa Tidak Ditemukan', `NIS ${nisFromQR} tidak terdaftar`, null, nisFromQR, currentLocation);
-                    startCountdown();
-                    return;
-                }
-
-                const today = new Date().toISOString().split('T')[0];
-                const alreadyAbsent = attendanceRecords.some(r => r.student_id === student.id && r.tanggal === today && r.status === 'hadir');
-                if (alreadyAbsent) {
-                    showStatus('warning', '⚠️ Sudah Absen Hari Ini', `${student.nama} sudah absen.`, student, nisFromQR, currentLocation);
-                    startCountdown();
-                    return;
-                }
-
-                const now = new Date();
+                
                 const locationValid = isWithinSchoolRadius(currentLocation.lat, currentLocation.lng);
-                const locStatus = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                const locationStatus = getLocationStatus(currentLocation.lat, currentLocation.lng);
+                
+                const student = findStudentByNIS(nisFromQR);
+                
+                if (!student) {
+                    showStatus(
+                        'error', 
+                        '❌ Siswa Tidak Ditemukan', 
+                        `NIS ${nisFromQR} tidak terdaftar di sistem.`, 
+                        null,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    showToast('Siswa tidak ditemukan!', 'error');
+                    
+                    startCountdown();
+                    isLoading = false;
+                    return;
+                }
+                
+                const today = formatDate(new Date());
+                const alreadyAbsent = attendanceRecords.some(r => 
+                    r.student_id === student.id && r.tanggal === today && r.status === 'hadir'
+                );
+                
+                if (alreadyAbsent) {
+                    showStatus(
+                        'warning', 
+                        '⚠️ Sudah Absen Hari Ini', 
+                        `${student.nama} sudah melakukan absensi hari ini.`, 
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    showToast('Sudah absen hari ini', 'warning');
+                    
+                    startCountdown();
+                    isLoading = false;
+                    return;
+                }
+                
+                const now = new Date();
                 const newAttendance = {
-                    id: 'ABS' + Date.now().toString(36).toUpperCase(),
+                    id: generateId(),
                     student_id: student.id,
                     student_nis: student.nis,
                     student_nama: student.nama,
                     student_kelas: student.kelas,
                     student_jurusan: student.jurusan,
+                    student_photo: student.photo || '',
                     status: 'hadir',
                     metode: 'qr',
-                    location: { lat: currentLocation.lat, lng: currentLocation.lng, accuracy: currentLocation.accuracy },
-                    keterangan: `Jarak: ${locStatus.distance}m`,
-                    tanggal: today,
+                    location: {
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy,
+                        timestamp: currentLocation.timestamp
+                    },
+                    keterangan: `Absen via QR. Jarak: ${locationStatus.distance}m dari sekolah. Akurasi: ±${Math.round(currentLocation.accuracy)}m`,
+                    tanggal: formatDate(now),
                     timestamp: now.getTime()
                 };
-
+                
                 const saved = await saveAttendance(newAttendance);
+                
                 if (saved) {
-                    showStatus(locationValid ? 'success' : 'warning',
-                        locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absen Tercatat (Luar Radius)',
-                        `${student.nama} - ${student.kelas}`,
-                        student, nisFromQR, currentLocation, locStatus);
+                    await saveLocationRecord({
+                        id: generateId(),
+                        attendance_id: newAttendance.id,
+                        student_id: student.id,
+                        student_nis: student.nis,
+                        student_nama: student.nama,
+                        lat: currentLocation.lat,
+                        lng: currentLocation.lng,
+                        accuracy: currentLocation.accuracy,
+                        within_radius: locationValid,
+                        distance: locationStatus.distance,
+                        timestamp: now.getTime()
+                    });
+                    
+                    let message = `Selamat datang, ${student.nama}`;
+                    if (!locationValid) {
+                        message = `Peringatan: Anda di luar radius sekolah (${locationStatus.distance}m)`;
+                    }
+                    
+                    showStatus(
+                        locationValid ? 'success' : 'warning',
+                        locationValid ? '✅ Absensi Berhasil!' : '⚠️ Absensi Tercatat (Luar Radius)',
+                        message,
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    
+                    showToast(locationValid ? 'Kehadiran tercatat!' : 'Absen tercatat (luar radius)', locationValid ? 'success' : 'warning');
+                    
                     await loadAttendance();
+                    
                     startCountdown();
                 } else {
-                    showStatus('error', '❌ Gagal Menyimpan', 'Coba lagi.', student, nisFromQR);
+                    showStatus(
+                        'error', 
+                        '❌ Gagal Menyimpan', 
+                        'Terjadi kesalahan server. Coba lagi.', 
+                        student,
+                        nisFromQR,
+                        currentLocation,
+                        locationStatus
+                    );
+                    
                     startCountdown();
                 }
+                
             } catch (error) {
-                showStatus('error', '❌ Error', error.message, null, decodedText);
+                console.error('Error processing scan:', error);
+                showStatus('error', '❌ Error', 'Terjadi kesalahan sistem: ' + error.message, null, decodedText);
+                showToast('Error: ' + error.message, 'error');
+                
                 startCountdown();
             } finally {
                 isLoading = false;
             }
         }
 
-        function showStatus(type, title, message, student, nisFromQR, location, locStatus) {
-            document.getElementById('statusCard').className = 'status-card ' + type;
-            document.getElementById('statusIcon').innerHTML = {success:'✅',error:'❌',warning:'⚠️'}[type] || '❓';
-            document.getElementById('statusTitle').textContent = title;
-            document.getElementById('statusMessage').textContent = message;
-            document.getElementById('countdownTimer').innerHTML = 'Kembali dalam <strong>3</strong> detik';
+        function startCountdown() {
+            countdownSeconds = 3;
+            const timerEl = document.getElementById('countdownTimer');
+            
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+            }
+            
+            countdownInterval = setInterval(() => {
+                countdownSeconds--;
+                timerEl.innerHTML = `Kembali ke scanner dalam <strong>${countdownSeconds}</strong> detik`;
+                
+                if (countdownSeconds <= 0) {
+                    clearInterval(countdownInterval);
+                    countdownInterval = null;
+                    resumeScanner();
+                }
+            }, 1000);
+        }
 
+        function skipCountdown() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            resumeScanner();
+        }
+
+        function scheduleScannerResume() {
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+            }
+            
+            autoResumeTimeout = setTimeout(() => {
+                resumeScanner();
+                autoResumeTimeout = null;
+            }, 3000);
+        }
+
+        function resumeScanner() {
+            if (html5QrcodeScanner && document.getElementById('mainContainer').classList.contains('visible')) {
+                try {
+                    html5QrcodeScanner.resume();
+                    isScanning = true;
+                    
+                    document.getElementById('statusCard').style.display = 'none';
+                    
+                    document.querySelector('.scanner-container').style.display = 'block';
+                    document.getElementById('recentScans').style.display = 'block';
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    showToast('Siap scan berikutnya', 'info');
+                } catch (e) {
+                    console.error('Resume scanner error:', e);
+                }
+            }
+        }
+
+        function onScanError(error) {}
+
+        function showStatus(type, title, message, student, nisFromQR, location, locationStatus) {
+            const card = document.getElementById('statusCard');
+            const icon = document.getElementById('statusIcon');
+            const titleEl = document.getElementById('statusTitle');
+            const messageEl = document.getElementById('statusMessage');
+            const detailEl = document.getElementById('studentDetail');
+            const miniMap = document.getElementById('miniMap');
+            const timerEl = document.getElementById('countdownTimer');
+            
+            card.className = 'status-card ' + type;
+            
+            const icons = {
+                success: '✅',
+                error: '❌',
+                warning: '⚠️'
+            };
+            icon.innerHTML = icons[type] || '❓';
+            
+            titleEl.textContent = title;
+            messageEl.textContent = message;
+            
+            timerEl.innerHTML = 'Kembali ke scanner dalam <strong>3</strong> detik';
+            
             if (student) {
-                document.getElementById('detailId').textContent = student.id || '-';
-                document.getElementById('detailNis').textContent = student.nis;
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = student.nis;
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
+                
                 if (location) {
-                    document.getElementById('detailLokasi').innerHTML = `${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}<br><span class="text-xs">±${Math.round(location.accuracy)}m</span>`;
-                    document.getElementById('detailLokasiStatus').innerHTML = `<span class="location-badge ${locStatus?.class}">${locStatus?.text}</span>`;
+                    document.getElementById('detailLokasi').innerHTML = `
+                        ${location.lat.toFixed(6)}, ${location.lng.toFixed(6)}<br>
+                        <span class="text-xs text-gray-500">Akurasi: ±${Math.round(location.accuracy)}m</span>
+                    `;
+                    document.getElementById('detailLokasiStatus').innerHTML = `
+                        <span class="location-badge ${locationStatus.class}">${locationStatus.text}</span>
+                    `;
+                    
+                    miniMap.classList.remove('hidden');
+                    miniMap.innerHTML = `<iframe 
+                        width="100%" 
+                        height="150" 
+                        frameborder="0" 
+                        style="border:0; border-radius: 20px;" 
+                        src="https://www.google.com/maps/embed/v1/view?key=AIzaSyDTKZRcAp-b7p0js0obNooW83DLFRXNl18&center=${location.lat},${location.lng}&zoom=15&maptype=roadmap"
+                        allowfullscreen>
+                    </iframe>`;
+                } else {
+                    document.getElementById('detailLokasi').textContent = '-';
+                    document.getElementById('detailLokasiStatus').textContent = '-';
+                    miniMap.classList.add('hidden');
                 }
-                document.getElementById('detailWaktu').textContent = new Date().toLocaleTimeString('id-ID');
+                
+                document.getElementById('detailWaktu').textContent = formatTime(new Date());
+                detailEl.style.display = 'block';
+            } else {
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                detailEl.style.display = 'block';
+                miniMap.classList.add('hidden');
             }
             
             document.querySelector('.scanner-container').style.display = 'none';
             document.getElementById('recentScans').style.display = 'none';
             document.getElementById('startBtn').style.display = 'none';
             document.getElementById('stopBtn').style.display = 'none';
-            document.getElementById('statusCard').style.display = 'block';
-        }
-
-        function startCountdown() {
-            countdownSeconds = 3;
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                countdownSeconds--;
-                document.getElementById('countdownTimer').innerHTML = `Kembali dalam <strong>${countdownSeconds}</strong> detik`;
-                if (countdownSeconds <= 0) { clearInterval(countdownInterval); countdownInterval = null; resumeScanner(); }
-            }, 1000);
-        }
-
-        function skipCountdown() {
-            if (countdownInterval) clearInterval(countdownInterval);
-            countdownInterval = null;
-            resumeScanner();
-        }
-
-        function scheduleScannerResume() {
-            if (autoResumeTimeout) clearTimeout(autoResumeTimeout);
-            autoResumeTimeout = setTimeout(resumeScanner, 3000);
-        }
-
-        function resumeScanner() {
-            if (html5QrcodeScanner) {
-                html5QrcodeScanner.resume();
-                isScanning = true;
-                document.getElementById('statusCard').style.display = 'none';
-                document.querySelector('.scanner-container').style.display = 'block';
-                document.getElementById('recentScans').style.display = 'block';
-                document.getElementById('startBtn').style.display = 'none';
-                document.getElementById('stopBtn').style.display = 'block';
-            }
-        }
-
-        function updateRecentScans() {
-            const today = new Date().toISOString().split('T')[0];
-            const scans = attendanceRecords.filter(r => r.tanggal === today && r.metode === 'qr').sort((a,b) => b.timestamp - a.timestamp).slice(0,5);
-            document.getElementById('scanCount').textContent = `${scans.length} hari ini`;
-            if (scans.length === 0) {
-                document.getElementById('recentList').innerHTML = '<div class="text-center text-gray-400 text-sm py-4"><i class="fas fa-camera text-3xl mb-2 opacity-50"></i><p>Belum ada scan</p></div>';
-            } else {
-                document.getElementById('recentList').innerHTML = scans.map(s => `
-                    <div class="scan-item">
-                        <div><div class="font-bold text-sm">${s.student_nama}</div><div class="text-xs text-gray-500">${s.student_kelas}</div></div>
-                        <div class="text-right"><div class="text-xs font-bold">${new Date(s.timestamp).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</div></div>
-                    </div>
-                `).join('');
-            }
+            
+            card.style.display = 'block';
         }
 
         function startScanner() {
-            if (!html5QrcodeScanner) initScanner();
-            else html5QrcodeScanner.render(onScanSuccess, onScanError);
+            if (!html5QrcodeScanner) {
+                initScanner();
+            } else {
+                try {
+                    html5QrcodeScanner.render(onScanSuccess, onScanError);
+                    isScanning = true;
+                    document.getElementById('startBtn').style.display = 'none';
+                    document.getElementById('stopBtn').style.display = 'block';
+                    
+                    startLocationTracking();
+                } catch (e) {
+                    console.error('Start scanner error:', e);
+                    showToast('Gagal memulai kamera', 'error');
+                }
+            }
         }
 
         function stopScanner() {
-            if (autoResumeTimeout) clearTimeout(autoResumeTimeout);
-            if (countdownInterval) clearInterval(countdownInterval);
+            if (autoResumeTimeout) {
+                clearTimeout(autoResumeTimeout);
+                autoResumeTimeout = null;
+            }
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+            
             if (html5QrcodeScanner && isScanning) {
-                html5QrcodeScanner.clear();
-                isScanning = false;
-                document.getElementById('startBtn').style.display = 'block';
-                document.getElementById('stopBtn').style.display = 'none';
-                stopLocationTracking();
-                document.getElementById('locationStatus').classList.remove('visible');
+                try {
+                    html5QrcodeScanner.clear();
+                    isScanning = false;
+                    document.getElementById('startBtn').style.display = 'block';
+                    document.getElementById('stopBtn').style.display = 'none';
+                    
+                    stopLocationTracking();
+                    document.getElementById('locationStatus').classList.remove('visible');
+                } catch (e) {
+                    console.error('Stop scanner error:', e);
+                }
             }
         }
 
         function initScanner() {
             try {
-                html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", { fps: 10, qrbox: { width: 250, height: 250 } }, false);
+                const config = {
+                    fps: 10,
+                    qrbox: { width: 250, height: 250 },
+                    rememberLastUsedCamera: true,
+                    showTorchButtonIfSupported: true,
+                    showZoomSliderIfSupported: true,
+                    defaultZoomValueIfSupported: 2
+                };
+                
+                html5QrcodeScanner = new Html5QrcodeScanner("qr-reader", config, false);
                 html5QrcodeScanner.render(onScanSuccess, onScanError);
                 isScanning = true;
+                
                 document.getElementById('startBtn').style.display = 'none';
                 document.getElementById('stopBtn').style.display = 'block';
+                
                 startLocationTracking();
-            } catch (e) {
+                
+            } catch (error) {
+                console.error('Init scanner error:', error);
                 showToast('Gagal inisialisasi kamera', 'error');
             }
         }
 
-        function onScanError(err) {}
+        async function checkCameraAndStart() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
+                stream.getTracks().forEach(track => track.stop());
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
+                await loadStudents();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
+                await loadAttendance();
+                
+                document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
+                await loadLocationRecords();
+                
+                startScanner();
+            } catch (err) {
+                showToast('Izinkan akses kamera untuk memindai QR', 'error');
+                console.error('Camera permission error:', err);
+            }
+        }
+
+        function showToast(message, type = 'info', duration = 3000) {
+            const container = document.getElementById('toastContainer');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.innerHTML = `
+                <i class="fas ${type === 'success' ? 'fa-check-circle' : type === 'error' ? 'fa-exclamation-circle' : type === 'warning' ? 'fa-exclamation-triangle' : 'fa-info-circle'} text-xl"></i>
+                <span>${message}</span>
+            `;
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.remove();
+            }, duration);
+        }
 
         async function init() {
+            await loadOpeningLogo();
+            
             document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
             await loadStudents();
+            
             document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
             await loadAttendance();
-            document.getElementById('openingOverlay').style.opacity = '0';
-            setTimeout(() => {
-                document.getElementById('openingOverlay').style.display = 'none';
-                document.getElementById('mainContainer').classList.add('visible');
-            }, 800);
+            
+            document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
+            await loadLocationRecords();
+            
+            closeOpening();
+            
+            if (typeof Html5QrcodeScanner === 'undefined') {
+                showToast('Library QR Code tidak tersedia', 'error');
+                return;
+            }
         }
 
         window.onload = init;
-        function showToast(m,t) { let to=document.getElementById('toastContainer'),d=document.createElement('div'); d.className='toast '+t; d.innerHTML=`<i class="fas ${t==='success'?'fa-check-circle':t==='error'?'fa-exclamation-circle':'fa-info-circle'}"></i><span>${m}</span>`; to.appendChild(d); setTimeout(()=>d.remove(),3000); }
     </script>
 </body>
 </html>
