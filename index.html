@@ -704,10 +704,10 @@
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
         // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
-        // GANTI URL INI DENGAN URL DEPLOYMENT APPS SCRIPT ANDA
+        // PASTIKAN ANDA MENGGANTI URL INI DENGAN URL APPS SCRIPT BARU SETELAH DEPLOY
         const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
 
-        // Sheet names
+        // Sheet names (sama dengan aplikasi siswa)
         const SHEET_NAMES = {
             STUDENTS: "STUDENTS",
             ATTENDANCE: "ATTENDANCE",
@@ -744,72 +744,6 @@
             attendance: null,
             locations: null
         };
-
-        // ==================== FUNGSI ARRAY TO OBJECTS ====================
-        function arrayToObjects(rows) {
-            if (!rows || rows.length < 2) return [];
-
-            const headers = rows[0];
-            const data = [];
-
-            for (let i = 1; i < rows.length; i++) {
-                const row = rows[i];
-                if (!row || row.length === 0 || (row.length === 1 && !row[0])) continue;
-
-                const obj = {};
-                headers.forEach((header, index) => {
-                    if (header && header.trim()) {
-                        let value = row[index] !== undefined ? row[index] : '';
-                        
-                        // Bersihkan value
-                        if (typeof value === 'string') value = value.trim();
-                        
-                        // Konversi tipe data berdasarkan header
-                        if (header === 'created_at' || header === 'timestamp' || header === 'updated_at') {
-                            if (value && !isNaN(value)) value = Number(value);
-                        } else if (header === 'poin' || header === 'distance') {
-                            if (value && !isNaN(value)) value = parseInt(value, 10);
-                        } else if (header === 'lat' || header === 'lng' || header === 'accuracy') {
-                            if (value && !isNaN(value)) value = parseFloat(value);
-                        } else if (header === 'within_radius') {
-                            value = value === 'true' || value === 'TRUE' || value === '1' || value === true;
-                        } else if (header === 'nis' || header === 'student_nis') {
-                            // Pastikan NIS selalu string
-                            value = String(value);
-                        }
-                        
-                        obj[header.trim()] = value;
-                    }
-                });
-
-                // Pastikan obj memiliki NIS
-                if (obj.nis || obj.student_nis) {
-                    data.push(obj);
-                }
-            }
-
-            console.log(`📊 arrayToObjects: ${data.length} data dari ${rows.length - 1} baris`);
-            return data;
-        }
-
-        function objectsToArray(objects, headers) {
-            const rows = [headers];
-            
-            objects.forEach(obj => {
-                const row = headers.map(header => {
-                    let value = obj[header] !== undefined ? obj[header] : '';
-                    
-                    if (header === 'location_lat' && obj.location) value = obj.location.lat || '';
-                    if (header === 'location_lng' && obj.location) value = obj.location.lng || '';
-                    if (header === 'location_accuracy' && obj.location) value = obj.location.accuracy || '';
-                    
-                    return value;
-                });
-                rows.push(row);
-            });
-            
-            return rows;
-        }
 
         // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
         async function fetchSheetData(sheetName) {
@@ -883,7 +817,7 @@
             });
         }
 
-        // POST data ke Google Sheets via Apps Script
+        // POST data ke Google Sheets via Apps Script (menggunakan JSONP untuk kompatibilitas)
         async function postToSheet(sheetName, data) {
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
@@ -1164,10 +1098,11 @@
                     const nis = String(student.nis).trim();
                     studentCache.set(nis, student);
                     studentCache.set(nis.replace(/^0+/, ''), student);
+                    // Tambahkan juga dengan nis asli tanpa modifikasi
+                    studentCache.set(student.nis, student);
                 });
                 
                 console.log('📚 Loaded students:', students.length);
-                console.log('📋 Contoh NIS:', students.slice(0, 3).map(s => s.nis));
                 return students;
             } catch (error) {
                 console.error('❌ Gagal load siswa:', error);
@@ -1264,7 +1199,61 @@
             }
         }
 
-        // ==================== FUNGSI FIND STUDENT BY NIS (YANG DIPERBAIKI) ====================
+        function arrayToObjects(rows) {
+            if (!rows || rows.length < 2) return [];
+
+            const headers = rows[0];
+            const data = [];
+
+            for (let i = 1; i < rows.length; i++) {
+                const row = rows[i];
+                if (row.length === 0 || (row.length === 1 && row[0] === '')) continue;
+
+                const obj = {};
+                headers.forEach((header, index) => {
+                    if (header && header.trim()) {
+                        let value = row[index] || '';
+
+                        if (header === 'created_at' || header === 'timestamp' || header === 'updated_at') {
+                            if (value && !isNaN(value)) value = parseInt(value);
+                        } else if (header === 'poin' || header === 'distance') {
+                            if (value && !isNaN(value)) value = parseInt(value);
+                        } else if (header === 'lat' || header === 'lng' || header === 'accuracy') {
+                            if (value && !isNaN(value)) value = parseFloat(value);
+                        } else if (header === 'within_radius') {
+                            value = value === 'true' || value === 'TRUE' || value === '1';
+                        }
+
+                        obj[header.trim()] = value;
+                    }
+                });
+
+                data.push(obj);
+            }
+
+            return data;
+        }
+
+        function objectsToArray(objects, headers) {
+            const rows = [headers];
+            
+            objects.forEach(obj => {
+                const row = headers.map(header => {
+                    let value = obj[header] !== undefined ? obj[header] : '';
+                    
+                    if (header === 'location_lat' && obj.location) value = obj.location.lat || '';
+                    if (header === 'location_lng' && obj.location) value = obj.location.lng || '';
+                    if (header === 'location_accuracy' && obj.location) value = obj.location.accuracy || '';
+                    
+                    return value;
+                });
+                rows.push(row);
+            });
+            
+            return rows;
+        }
+
+        // ==================== FUNGSI PENCARIAN SISWA YANG DIPERBAIKI ====================
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
@@ -1273,57 +1262,57 @@
             
             // Bersihkan NIS dari QR
             const cleanNis = String(nisFromQR).trim();
-            
             console.log('🔍 Mencari NIS:', cleanNis);
-            console.log('📚 Total siswa:', students.length);
-            console.log('📋 Contoh NIS:', students.slice(0, 5).map(s => s.nis));
             
-            // Cek cache dulu
+            // Cek di cache dulu (exact match)
             if (studentCache.has(cleanNis)) {
-                console.log('✅ Ditemukan di cache:', studentCache.get(cleanNis));
+                console.log('✅ Ditemukan di cache (exact match):', cleanNis);
                 return studentCache.get(cleanNis);
             }
             
-            // Coba berbagai format pencarian
-            let student = null;
+            // Coba tanpa leading zeros
+            const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
+            if (studentCache.has(withoutLeadingZeros)) {
+                console.log('✅ Ditemukan di cache (tanpa leading zeros):', withoutLeadingZeros);
+                return studentCache.get(withoutLeadingZeros);
+            }
             
-            // 1. Exact match (string)
-            student = students.find(s => String(s.nis).trim() === cleanNis);
+            // Cari di array students
+            console.log('🔍 Mencari di array students...');
+            
+            // Exact match
+            let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) {
-                console.log('✅ Ditemukan exact match:', student);
+                console.log('✅ Ditemukan exact match:', student.nama);
                 return student;
             }
             
-            // 2. Tanpa leading zeros
-            const withoutZeros = cleanNis.replace(/^0+/, '');
-            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutZeros);
+            // Match tanpa leading zeros
+            student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) {
-                console.log('✅ Ditemukan tanpa leading zeros:', student);
+                console.log('✅ Ditemukan match tanpa leading zeros:', student.nama);
                 return student;
             }
             
-            // 3. Dengan leading zeros (coba dengan panjang yang berbeda)
-            for (let padLength = 3; padLength <= 8; padLength++) {
-                const withZeros = cleanNis.padStart(padLength, '0');
-                student = students.find(s => String(s.nis) === withZeros);
-                if (student) {
-                    console.log(`✅ Ditemukan dengan padding ${padLength}:`, student);
-                    return student;
-                }
-            }
-            
-            // 4. Ends with (untuk NIS panjang)
+            // Match dengan endsWith (untuk NIS yang mungkin terpotong)
             const last5Digits = cleanNis.slice(-5);
             student = students.find(s => String(s.nis).endsWith(last5Digits));
             if (student) {
-                console.log('✅ Ditemukan endsWith:', student);
+                console.log('✅ Ditemukan match last 5 digits:', student.nama);
                 return student;
             }
             
-            // 5. Includes
-            student = students.find(s => String(s.nis).includes(cleanNis) || cleanNis.includes(String(s.nis)));
+            // Match dengan includes
+            student = students.find(s => String(s.nis).includes(cleanNis));
             if (student) {
-                console.log('✅ Ditemukan includes:', student);
+                console.log('✅ Ditemukan match includes:', student.nama);
+                return student;
+            }
+            
+            // Coba dengan NIS asli (tanpa modifikasi)
+            student = students.find(s => s.nis === cleanNis);
+            if (student) {
+                console.log('✅ Ditemukan match NIS asli:', student.nama);
                 return student;
             }
             
