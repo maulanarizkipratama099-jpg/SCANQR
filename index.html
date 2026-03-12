@@ -737,6 +737,7 @@
         let countdownInterval = null;
         let countdownSeconds = 3;
         let studentCache = new Map();
+        let isDataLoaded = false;
         
         // Cache untuk data
         const dataCache = {
@@ -745,18 +746,20 @@
             locations: null
         };
 
+        // ==================== FUNGSI DEBUG ====================
+        function debugLog(message, data = null) {
+            console.log(`🔍 [DEBUG] ${message}`, data || '');
+        }
+
         // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
         async function fetchSheetData(sheetName) {
-            // Cek cache
-            if (dataCache[sheetName.toLowerCase()]) {
-                return dataCache[sheetName.toLowerCase()];
-            }
-
+            debugLog(`Mengambil data ${sheetName}...`);
+            
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
                 window[callbackName] = function(response) {
-                    console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                    debugLog(`Response ${sheetName} diterima:`, response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
@@ -766,7 +769,6 @@
                     
                     if (response && response.success) {
                         const data = response.data || [];
-                        dataCache[sheetName.toLowerCase()] = data;
                         resolve(data);
                     } else {
                         console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
@@ -814,17 +816,19 @@
                 };
 
                 document.body.appendChild(script);
-                console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
+                debugLog(`Mengirim request ${sheetName} dengan callback ${callbackName}`);
             });
         }
 
-        // POST data ke Google Sheets via Apps Script (menggunakan JSONP untuk kompatibilitas)
+        // POST data ke Google Sheets via Apps Script
         async function postToSheet(sheetName, data) {
+            debugLog(`Menyimpan data ke ${sheetName}...`);
+            
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
                 window[callbackName] = function(response) {
-                    console.log(`📥 Response POST untuk ${sheetName}:`, response);
+                    debugLog(`Response POST untuk ${sheetName}:`, response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
@@ -881,7 +885,7 @@
                 };
 
                 document.body.appendChild(script);
-                console.log(`📤 Mengirim POST request ${sheetName} dengan callback ${callbackName}`);
+                debugLog(`Mengirim POST request ${sheetName} dengan callback ${callbackName}`);
             });
         }
 
@@ -891,7 +895,7 @@
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
                 window[callbackName] = function(response) {
-                    console.log(`📥 Response config:`, response);
+                    debugLog('Response config:', response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
@@ -932,7 +936,7 @@
                 };
 
                 document.body.appendChild(script);
-                console.log(`📤 Mengirim request config dengan callback ${callbackName}`);
+                debugLog(`Mengirim request config dengan callback ${callbackName}`);
             });
         }
 
@@ -1094,17 +1098,35 @@
                 const data = await fetchSheetData('STUDENTS');
                 students = arrayToObjects(data);
                 
+                debugLog(`Total siswa dimuat: ${students.length}`);
+                
+                // Tampilkan 5 siswa pertama untuk debug
+                if (students.length > 0) {
+                    debugLog('5 siswa pertama:', students.slice(0, 5));
+                }
+                
+                // Update cache
                 studentCache.clear();
                 students.forEach(student => {
                     const nis = String(student.nis).trim();
+                    // Simpan dengan berbagai format untuk pencarian fleksibel
                     studentCache.set(nis, student);
-                    studentCache.set(nis.replace(/^0+/, ''), student);
+                    studentCache.set(nis.replace(/^0+/, ''), student); // Tanpa leading zeros
+                    studentCache.set(nis.padStart(10, '0'), student); // Dengan leading zeros sampai 10 digit
+                    
+                    // Jika NIS berupa angka, simpan juga sebagai number
+                    if (!isNaN(nis)) {
+                        studentCache.set(parseInt(nis).toString(), student);
+                    }
                 });
                 
-                console.log('📚 Loaded students:', students.length);
+                debugLog(`Student cache size: ${studentCache.size}`);
+                isDataLoaded = true;
+                
                 return students;
             } catch (error) {
                 console.error('❌ Gagal load siswa:', error);
+                showToast('Gagal memuat data siswa', 'error');
                 return [];
             }
         }
@@ -1127,7 +1149,7 @@
                     return record;
                 });
                 
-                console.log('📋 Loaded attendance:', attendanceRecords.length);
+                debugLog(`Total absensi dimuat: ${attendanceRecords.length}`);
                 updateRecentScans();
                 
                 return attendanceRecords;
@@ -1141,6 +1163,7 @@
             try {
                 const data = await fetchSheetData('LOCATIONS');
                 locationRecords = arrayToObjects(data);
+                debugLog(`Total lokasi dimuat: ${locationRecords.length}`);
                 return locationRecords;
             } catch (error) {
                 console.error('❌ Gagal load lokasi:', error);
@@ -1258,61 +1281,103 @@
             return rows;
         }
 
+        // ==================== FUNGSI PENCARIAN SISWA YANG DIPERBAIKI ====================
         function findStudentByNIS(nisFromQR) {
+            debugLog('Mencari siswa dengan NIS:', nisFromQR);
+            
             if (!students || students.length === 0) {
-                console.log('⚠️ Data siswa kosong');
+                console.warn('⚠️ Data siswa kosong! Pastikan data sudah dimuat.');
                 return null;
             }
             
+            // Bersihkan NIS dari QR
             const cleanNis = String(nisFromQR).trim();
-            console.log('🔍 Mencari NIS:', cleanNis);
+            debugLog('NIS setelah dibersihkan:', cleanNis);
             
-            // Cek cache dulu
+            // METHOD 1: Cek di cache (paling cepat)
             if (studentCache.has(cleanNis)) {
-                console.log('✅ Ditemukan di cache (exact match):', cleanNis);
-                return studentCache.get(cleanNis);
+                const student = studentCache.get(cleanNis);
+                debugLog('✅ METHOD 1: Ditemukan di cache (exact match):', student.nama);
+                return student;
             }
             
-            // Coba tanpa leading zeros
+            // METHOD 2: Coba tanpa leading zeros
             const withoutLeadingZeros = cleanNis.replace(/^0+/, '');
-            if (studentCache.has(withoutLeadingZeros)) {
-                console.log('✅ Ditemukan di cache (tanpa leading zeros):', withoutLeadingZeros);
-                return studentCache.get(withoutLeadingZeros);
+            if (withoutLeadingZeros !== cleanNis && studentCache.has(withoutLeadingZeros)) {
+                const student = studentCache.get(withoutLeadingZeros);
+                debugLog('✅ METHOD 2: Ditemukan tanpa leading zeros:', student.nama);
+                return student;
             }
             
-            // Cari di array students
-            console.log('🔍 Mencari di array students...');
+            // METHOD 3: Coba dengan leading zeros (jika NIS di database pakai leading zeros)
+            const withLeadingZeros = cleanNis.padStart(10, '0');
+            if (withLeadingZeros !== cleanNis && studentCache.has(withLeadingZeros)) {
+                const student = studentCache.get(withLeadingZeros);
+                debugLog('✅ METHOD 3: Ditemukan dengan leading zeros:', student.nama);
+                return student;
+            }
             
-            // Exact match
+            // METHOD 4: Coba sebagai angka (hapus semua non-digit)
+            const digitsOnly = cleanNis.replace(/\D/g, '');
+            if (digitsOnly !== cleanNis && studentCache.has(digitsOnly)) {
+                const student = studentCache.get(digitsOnly);
+                debugLog('✅ METHOD 4: Ditemukan sebagai angka saja:', student.nama);
+                return student;
+            }
+            
+            // METHOD 5: Cari di array students dengan berbagai metode
+            debugLog('Mencari di array students dengan metode manual...');
+            
+            // 5A: Exact match
             let student = students.find(s => String(s.nis).trim() === cleanNis);
             if (student) {
-                console.log('✅ Ditemukan exact match:', student.nama);
+                debugLog('✅ METHOD 5A: Exact match ditemukan:', student.nama);
                 return student;
             }
             
-            // Match tanpa leading zeros
+            // 5B: Match tanpa leading zeros
             student = students.find(s => String(s.nis).replace(/^0+/, '') === withoutLeadingZeros);
             if (student) {
-                console.log('✅ Ditemukan match tanpa leading zeros:', student.nama);
+                debugLog('✅ METHOD 5B: Match tanpa leading zeros:', student.nama);
                 return student;
             }
             
-            // Match dengan endsWith (untuk NIS yang mungkin terpotong)
+            // 5C: Match dengan leading zeros
+            student = students.find(s => String(s.nis).padStart(10, '0') === withLeadingZeros);
+            if (student) {
+                debugLog('✅ METHOD 5C: Match dengan leading zeros:', student.nama);
+                return student;
+            }
+            
+            // 5D: Match dengan endsWith (cocokkan 5 digit terakhir)
             const last5Digits = cleanNis.slice(-5);
             student = students.find(s => String(s.nis).endsWith(last5Digits));
             if (student) {
-                console.log('✅ Ditemukan match last 5 digits:', student.nama);
+                debugLog('✅ METHOD 5D: Match last 5 digits:', student.nama);
                 return student;
             }
             
-            // Match dengan includes
+            // 5E: Match dengan includes
             student = students.find(s => String(s.nis).includes(cleanNis));
             if (student) {
-                console.log('✅ Ditemukan match includes:', student.nama);
+                debugLog('✅ METHOD 5E: Match includes:', student.nama);
                 return student;
             }
             
-            console.log('❌ Siswa tidak ditemukan untuk NIS:', cleanNis);
+            // 5F: Match dengan angka saja
+            if (digitsOnly) {
+                student = students.find(s => String(s.nis).replace(/\D/g, '') === digitsOnly);
+                if (student) {
+                    debugLog('✅ METHOD 5F: Match digits only:', student.nama);
+                    return student;
+                }
+            }
+            
+            // Jika semua metode gagal
+            console.warn('❌ Siswa TIDAK ditemukan untuk NIS:', cleanNis);
+            debugLog('NIS yang dicari:', cleanNis);
+            debugLog('Sample NIS di database (5 pertama):', students.slice(0, 5).map(s => s.nis));
+            
             return null;
         }
 
@@ -1403,6 +1468,22 @@
                 console.log('🔍 QR terdeteksi:', nisFromQR);
                 
                 showToast('Memproses scan...', 'info');
+                
+                // Cek apakah data siswa sudah dimuat
+                if (!isDataLoaded || students.length === 0) {
+                    showStatus(
+                        'error',
+                        '❌ Data Siswa Belum Dimuat',
+                        'Silakan refresh halaman dan coba lagi',
+                        null,
+                        nisFromQR
+                    );
+                    showToast('Data siswa belum dimuat', 'error');
+                    
+                    scheduleScannerResume();
+                    isLoading = false;
+                    return;
+                }
                 
                 if (!currentLocation) {
                     showStatus(
