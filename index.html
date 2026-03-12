@@ -631,12 +631,12 @@
             
             <div id="studentDetail" class="student-detail">
                 <div class="student-detail-item">
-                    <span class="label">ID Siswa</span>
-                    <span class="value" id="detailId">-</span>
+                    <span class="label">NIS (QR)</span>
+                    <span class="value" id="detailNisQR">-</span>
                 </div>
                 <div class="student-detail-item">
-                    <span class="label">NIS</span>
-                    <span class="value" id="detailNis">-</span>
+                    <span class="label">NIS (DB)</span>
+                    <span class="value" id="detailNisDB">-</span>
                 </div>
                 <div class="student-detail-item">
                     <span class="label">Nama</span>
@@ -703,15 +703,15 @@
     <!-- Load Library -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
     <script>
-        // ==================== KONFIGURASI GOOGLE APPS SCRIPT ====================
-        // PASTIKAN ANDA MENGGANTI URL INI DENGAN URL APPS SCRIPT BARU SETELAH DEPLOY
-        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyhrMK7esCETPxnd1BOh9xq27q-mC0w2_YK3JXCTedbTpB5RmzxSFpAJYo06X1dUTA/exec";
+        // ==================== KONFIGURASI APPS SCRIPT ====================
+        const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzsNHWFkOJ3u-Vuz30PN0o8xFQwnCadBqZcSSBsj9AZ-XJ4lBGLDNvuZEn_xLJax0Zk/exec";
 
-        // Sheet names (sama dengan aplikasi siswa)
+        // Sheet names
         const SHEET_NAMES = {
             STUDENTS: "STUDENTS",
             ATTENDANCE: "ATTENDANCE",
-            LOCATIONS: "LOCATIONS"
+            LOCATIONS: "LOCATIONS",
+            CONFIG: "CONFIG"
         };
 
         // KONSTANTA LOKASI SEKOLAH
@@ -787,7 +787,8 @@
                 const actionMap = {
                     'STUDENTS': 'getStudents',
                     'ATTENDANCE': 'getAttendance',
-                    'LOCATIONS': 'getLocations'
+                    'LOCATIONS': 'getLocations',
+                    'CONFIG': 'getConfig'
                 };
 
                 const action = actionMap[sheetName];
@@ -1088,7 +1089,7 @@
         }
 
         // ==================== FUNGSI DATABASE ====================
-        async function loadStudents() {
+        async function fetchStudents() {
             try {
                 const data = await fetchSheetData('STUDENTS');
                 students = arrayToObjects(data);
@@ -1098,8 +1099,6 @@
                     const nis = String(student.nis).trim();
                     studentCache.set(nis, student);
                     studentCache.set(nis.replace(/^0+/, ''), student);
-                    // Tambahkan juga dengan nis asli tanpa modifikasi
-                    studentCache.set(student.nis, student);
                 });
                 
                 console.log('📚 Loaded students:', students.length);
@@ -1110,7 +1109,7 @@
             }
         }
 
-        async function loadAttendance() {
+        async function fetchAttendance() {
             try {
                 const data = await fetchSheetData('ATTENDANCE');
                 attendanceRecords = arrayToObjects(data).map(record => {
@@ -1138,7 +1137,7 @@
             }
         }
 
-        async function loadLocationRecords() {
+        async function fetchLocations() {
             try {
                 const data = await fetchSheetData('LOCATIONS');
                 locationRecords = arrayToObjects(data);
@@ -1157,12 +1156,23 @@
                 
                 // Konversi kembali ke format flat untuk sheet
                 const recordsForSheet = attendanceRecords.map(record => ({
-                    ...record,
+                    id: record.id,
+                    student_id: record.student_id,
+                    student_nis: record.student_nis,
+                    student_nama: record.student_nama,
+                    student_kelas: record.student_kelas,
+                    student_jurusan: record.student_jurusan,
+                    student_photo: record.student_photo || '',
+                    status: record.status,
+                    metode: record.metode,
                     location_lat: record.location?.lat || '',
                     location_lng: record.location?.lng || '',
-                    location_accuracy: record.location?.accuracy || ''
+                    location_accuracy: record.location?.accuracy || '',
+                    keterangan: record.keterangan || '',
+                    tanggal: record.tanggal,
+                    timestamp: record.timestamp
                 }));
-                
+
                 const headers = ['id', 'student_id', 'student_nis', 'student_nama', 'student_kelas', 'student_jurusan', 'student_photo', 'status', 'metode', 'location_lat', 'location_lng', 'location_accuracy', 'keterangan', 'tanggal', 'timestamp'];
                 const rows = objectsToArray(recordsForSheet, headers);
                 
@@ -1240,11 +1250,6 @@
             objects.forEach(obj => {
                 const row = headers.map(header => {
                     let value = obj[header] !== undefined ? obj[header] : '';
-                    
-                    if (header === 'location_lat' && obj.location) value = obj.location.lat || '';
-                    if (header === 'location_lng' && obj.location) value = obj.location.lng || '';
-                    if (header === 'location_accuracy' && obj.location) value = obj.location.accuracy || '';
-                    
                     return value;
                 });
                 rows.push(row);
@@ -1253,18 +1258,16 @@
             return rows;
         }
 
-        // ==================== FUNGSI PENCARIAN SISWA YANG DIPERBAIKI ====================
         function findStudentByNIS(nisFromQR) {
             if (!students || students.length === 0) {
                 console.log('⚠️ Data siswa kosong');
                 return null;
             }
             
-            // Bersihkan NIS dari QR
             const cleanNis = String(nisFromQR).trim();
             console.log('🔍 Mencari NIS:', cleanNis);
             
-            // Cek di cache dulu (exact match)
+            // Cek cache dulu
             if (studentCache.has(cleanNis)) {
                 console.log('✅ Ditemukan di cache (exact match):', cleanNis);
                 return studentCache.get(cleanNis);
@@ -1306,13 +1309,6 @@
             student = students.find(s => String(s.nis).includes(cleanNis));
             if (student) {
                 console.log('✅ Ditemukan match includes:', student.nama);
-                return student;
-            }
-            
-            // Coba dengan NIS asli (tanpa modifikasi)
-            student = students.find(s => s.nis === cleanNis);
-            if (student) {
-                console.log('✅ Ditemukan match NIS asli:', student.nama);
                 return student;
             }
             
@@ -1523,7 +1519,7 @@
                     
                     showToast(locationValid ? 'Kehadiran tercatat!' : 'Absen tercatat (luar radius)', locationValid ? 'success' : 'warning');
                     
-                    await loadAttendance();
+                    await fetchAttendance();
                     
                     startCountdown();
                 } else {
@@ -1636,8 +1632,8 @@
             timerEl.innerHTML = 'Kembali ke scanner dalam <strong>3</strong> detik';
             
             if (student) {
-                document.getElementById('detailId').textContent = student.id || '-';
-                document.getElementById('detailNis').textContent = student.nis;
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
+                document.getElementById('detailNisDB').textContent = student.nis;
                 document.getElementById('detailNama').textContent = student.nama;
                 document.getElementById('detailKelas').textContent = student.kelas;
                 document.getElementById('detailJurusan').textContent = student.jurusan;
@@ -1669,7 +1665,7 @@
                 document.getElementById('detailWaktu').textContent = formatTime(new Date());
                 detailEl.style.display = 'block';
             } else {
-                document.getElementById('detailId').textContent = nisFromQR || '-';
+                document.getElementById('detailNisQR').textContent = nisFromQR || '-';
                 detailEl.style.display = 'block';
                 miniMap.classList.add('hidden');
             }
@@ -1757,13 +1753,13 @@
                 stream.getTracks().forEach(track => track.stop());
                 
                 document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
-                await loadStudents();
+                await fetchStudents();
                 
                 document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
-                await loadAttendance();
+                await fetchAttendance();
                 
                 document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
-                await loadLocationRecords();
+                await fetchLocations();
                 
                 startScanner();
             } catch (err) {
@@ -1791,13 +1787,13 @@
             await loadOpeningLogo();
             
             document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
-            await loadStudents();
+            await fetchStudents();
             
             document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
-            await loadAttendance();
+            await fetchAttendance();
             
             document.getElementById('openingStatus').textContent = 'Memuat data lokasi...';
-            await loadLocationRecords();
+            await fetchLocations();
             
             closeOpening();
             
