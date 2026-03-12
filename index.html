@@ -123,156 +123,6 @@
             100% { width: 100%; }
         }
 
-        /* Login Container */
-        .login-container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
-            border-radius: 40px;
-            padding: 40px 28px;
-            width: 100%;
-            max-width: 400px;
-            box-shadow: 0 30px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.2);
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            animation: fadeInUp 0.8s ease-out;
-            display: none;
-        }
-
-        .login-container.visible {
-            display: block;
-        }
-
-        .login-header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .login-header .logo-small {
-            width: 80px;
-            height: 80px;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            border-radius: 30px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 15px;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-        }
-
-        .login-header .logo-small i {
-            font-size: 40px;
-            color: white;
-        }
-
-        .login-header h2 {
-            font-size: 24px;
-            font-weight: 800;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed, #ec4899);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 6px;
-        }
-
-        .login-header p {
-            color: #6b7280;
-            font-size: 14px;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            font-size: 14px;
-            font-weight: 600;
-            color: #374151;
-            margin-bottom: 8px;
-        }
-
-        .input-group {
-            position: relative;
-        }
-
-        .input-group i:not(.password-toggle) {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #9ca3af;
-            font-size: 18px;
-            pointer-events: none;
-        }
-
-        .input-group input {
-            width: 100%;
-            padding: 16px 50px 16px 50px;
-            border: 2px solid #e5e7eb;
-            border-radius: 30px;
-            font-size: 15px;
-            transition: all 0.3s ease;
-            background: white;
-        }
-
-        .input-group input:focus {
-            outline: none;
-            border-color: #4f46e5;
-            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
-        }
-
-        .input-group input::placeholder {
-            color: #9ca3af;
-            font-size: 14px;
-        }
-
-        .password-toggle {
-            position: absolute;
-            right: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            cursor: pointer;
-            color: #9ca3af;
-            font-size: 18px;
-            z-index: 10;
-            padding: 8px;
-            background: transparent;
-            transition: all 0.2s ease;
-        }
-
-        .password-toggle:hover {
-            color: #4f46e5;
-        }
-
-        .btn-login {
-            width: 100%;
-            padding: 16px;
-            background: linear-gradient(145deg, #4f46e5, #7c3aed);
-            color: white;
-            border: none;
-            border-radius: 40px;
-            font-size: 16px;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
-            margin-top: 10px;
-        }
-
-        .btn-login:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 20px 30px -8px rgba(79, 70, 229, 0.5);
-        }
-
-        .btn-login i {
-            margin-right: 8px;
-        }
-
-        .login-footer {
-            text-align: center;
-            margin-top: 20px;
-            color: #6b7280;
-            font-size: 13px;
-        }
-
         .container {
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(20px);
@@ -305,7 +155,6 @@
         .header {
             text-align: center;
             margin-bottom: 24px;
-            padding-right: 70px;
         }
         
         .header h1 {
@@ -683,28 +532,6 @@
             border-radius: 10px;
         }
 
-        .logout-btn {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255, 255, 255, 0.2);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            padding: 8px 16px;
-            border-radius: 30px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-            z-index: 100;
-        }
-
-        .logout-btn:hover {
-            background: rgba(255, 255, 255, 0.3);
-            transform: translateY(-2px);
-        }
-
         .auto-scan-indicator {
             text-align: center;
             font-size: 12px;
@@ -740,8 +567,8 @@
         </div>
     </div>
 
-    <!-- Main Container (Tanpa Login) -->
-    <div id="mainContainer" class="container visible">
+    <!-- Main Container -->
+    <div id="mainContainer" class="container">
         <div class="header">
             <h1>📱 ABSENSI QR CODE</h1>
             <p>MAS IBNU HUSAIN</p>
@@ -910,70 +737,202 @@
         let countdownInterval = null;
         let countdownSeconds = 3;
         let studentCache = new Map();
+        
+        // Cache untuk data
+        const dataCache = {
+            students: null,
+            attendance: null,
+            locations: null
+        };
 
-        // ==================== FUNGSI API GOOGLE APPS SCRIPT ====================
-
-        // GET data dari Google Sheets via Apps Script
+        // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
         async function fetchSheetData(sheetName) {
-            try {
-                const url = `${APPS_SCRIPT_URL}?action=get${sheetName}&t=${Date.now()}`;
-                const response = await fetch(url);
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.data || [];
-                } else {
-                    console.error(`Error fetching ${sheetName}:`, result.error);
-                    showToast(`Gagal memuat data ${sheetName}`, 'error');
-                    return [];
-                }
-            } catch (error) {
-                console.error(`Error fetching ${sheetName}:`, error);
-                return [];
+            // Cek cache
+            if (dataCache[sheetName.toLowerCase()]) {
+                return dataCache[sheetName.toLowerCase()];
             }
+
+            return new Promise((resolve) => {
+                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+                
+                window[callbackName] = function(response) {
+                    console.log(`📥 Response diterima untuk ${sheetName}:`, response);
+                    
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    delete window[callbackName];
+                    clearTimeout(timeout);
+                    
+                    if (response && response.success) {
+                        const data = response.data || [];
+                        dataCache[sheetName.toLowerCase()] = data;
+                        resolve(data);
+                    } else {
+                        console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
+                        resolve([]);
+                    }
+                };
+
+                const timeout = setTimeout(() => {
+                    console.log(`⏱️ Timeout fetch ${sheetName}`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve([]);
+                }, 10000);
+
+                const actionMap = {
+                    'STUDENTS': 'getStudents',
+                    'ATTENDANCE': 'getAttendance',
+                    'LOCATIONS': 'getLocations'
+                };
+
+                const action = actionMap[sheetName];
+                if (!action) {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    resolve([]);
+                    return;
+                }
+
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
+                
+                script.onerror = () => {
+                    console.error(`❌ Script error fetch ${sheetName}`);
+                    clearTimeout(timeout);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    script.remove();
+                    resolve([]);
+                };
+
+                document.body.appendChild(script);
+                console.log(`📤 Mengirim request ${sheetName} dengan callback ${callbackName}`);
+            });
         }
 
-        // POST data ke Google Sheets via Apps Script
+        // POST data ke Google Sheets via Apps Script (menggunakan JSONP untuk kompatibilitas)
         async function postToSheet(sheetName, data) {
-            try {
-                const response = await fetch(APPS_SCRIPT_URL, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        action: 'save' + sheetName,
-                        data: data
-                    })
-                });
+            return new Promise((resolve) => {
+                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
-                const result = await response.json();
-                return result.success || false;
+                window[callbackName] = function(response) {
+                    console.log(`📥 Response POST untuk ${sheetName}:`, response);
+                    
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    delete window[callbackName];
+                    clearTimeout(timeout);
+                    
+                    if (response && response.success) {
+                        resolve(true);
+                    } else {
+                        console.error(`❌ Gagal POST ke ${sheetName}:`, response?.error);
+                        resolve(false);
+                    }
+                };
+
+                const timeout = setTimeout(() => {
+                    console.log(`⏱️ Timeout POST ${sheetName}`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve(false);
+                }, 15000);
+
+                const actionMap = {
+                    'ATTENDANCE': 'saveAttendance',
+                    'LOCATIONS': 'saveLocations'
+                };
+
+                const action = actionMap[sheetName];
+                if (!action) {
+                    clearTimeout(timeout);
+                    delete window[callbackName];
+                    resolve(false);
+                    return;
+                }
+
+                // Untuk data besar, kita perlu encode data
+                const encodedData = encodeURIComponent(JSON.stringify(data));
                 
-            } catch (error) {
-                console.error(`Error posting to ${sheetName}:`, error);
-                showToast(`Gagal menyimpan data: ${error.message}`, 'error');
-                return false;
-            }
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = `${APPS_SCRIPT_URL}?action=${action}&data=${encodedData}&callback=${callbackName}&_=${Date.now()}`;
+                
+                script.onerror = () => {
+                    console.error(`❌ Script error POST ${sheetName}`);
+                    clearTimeout(timeout);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    script.remove();
+                    resolve(false);
+                };
+
+                document.body.appendChild(script);
+                console.log(`📤 Mengirim POST request ${sheetName} dengan callback ${callbackName}`);
+            });
         }
 
         // GET config dari Google Sheets
         async function fetchConfig() {
-            try {
-                const data = await fetchSheetData('CONFIG');
-                if (data && typeof data === 'object') {
-                    return data;
-                }
-                return {};
-            } catch (error) {
-                console.error('Error fetching config:', error);
-                return {};
-            }
+            return new Promise((resolve) => {
+                const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
+                
+                window[callbackName] = function(response) {
+                    console.log(`📥 Response config:`, response);
+                    
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    delete window[callbackName];
+                    clearTimeout(timeout);
+                    
+                    if (response && response.success) {
+                        resolve(response.data || {});
+                    } else {
+                        console.error(`❌ Error fetch config:`, response?.error);
+                        resolve({});
+                    }
+                };
+
+                const timeout = setTimeout(() => {
+                    console.log(`⏱️ Timeout fetch config`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve({});
+                }, 10000);
+
+                const script = document.createElement('script');
+                script.id = callbackName;
+                script.src = `${APPS_SCRIPT_URL}?action=getConfig&callback=${callbackName}&_=${Date.now()}`;
+                
+                script.onerror = () => {
+                    console.error(`❌ Script error fetch config`);
+                    clearTimeout(timeout);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    script.remove();
+                    resolve({});
+                };
+
+                document.body.appendChild(script);
+                console.log(`📤 Mengirim request config dengan callback ${callbackName}`);
+            });
         }
 
         // ==================== FUNGSI OPENING ====================
@@ -997,6 +956,7 @@
                 document.getElementById('openingOverlay').style.opacity = '0';
                 setTimeout(() => {
                     document.getElementById('openingOverlay').style.display = 'none';
+                    document.getElementById('mainContainer').classList.add('visible');
                 }, 800);
             }, 2000);
         }
@@ -1131,7 +1091,7 @@
         async function loadStudents() {
             try {
                 const data = await fetchSheetData('STUDENTS');
-                students = data && data.length > 1 ? arrayToObjects(data) : [];
+                students = arrayToObjects(data);
                 
                 studentCache.clear();
                 students.forEach(student => {
@@ -1151,9 +1111,7 @@
         async function loadAttendance() {
             try {
                 const data = await fetchSheetData('ATTENDANCE');
-                const records = data && data.length > 1 ? arrayToObjects(data) : [];
-                
-                attendanceRecords = records.map(record => {
+                attendanceRecords = arrayToObjects(data).map(record => {
                     if (record.location_lat && record.location_lng) {
                         record.location = {
                             lat: parseFloat(record.location_lat),
@@ -1181,7 +1139,7 @@
         async function loadLocationRecords() {
             try {
                 const data = await fetchSheetData('LOCATIONS');
-                locationRecords = data && data.length > 1 ? arrayToObjects(data) : [];
+                locationRecords = arrayToObjects(data);
                 return locationRecords;
             } catch (error) {
                 console.error('❌ Gagal load lokasi:', error);
@@ -1323,7 +1281,7 @@
         }
 
         function generateId() {
-            return 'ABS' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5);
+            return 'ABS' + Date.now().toString(36) + Math.random().toString(36).substr(2, 5).toUpperCase();
         }
 
         function formatDate(date) {
@@ -1593,7 +1551,7 @@
         }
 
         function resumeScanner() {
-            if (html5QrcodeScanner) {
+            if (html5QrcodeScanner && document.getElementById('mainContainer').classList.contains('visible')) {
                 try {
                     html5QrcodeScanner.resume();
                     isScanning = true;
@@ -1807,9 +1765,6 @@
                 showToast('Library QR Code tidak tersedia', 'error');
                 return;
             }
-            
-            // Auto-start scanner
-            checkCameraAndStart();
         }
 
         window.onload = init;
