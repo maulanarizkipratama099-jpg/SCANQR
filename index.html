@@ -548,6 +548,24 @@
             0%, 100% { opacity: 1; }
             50% { opacity: 0.5; }
         }
+
+        .retry-button {
+            background: linear-gradient(145deg, #4f46e5, #7c3aed);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 30px;
+            font-weight: 600;
+            margin-top: 20px;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+        }
     </style>
 </head>
 <body>
@@ -617,6 +635,15 @@
                 <i class="fas fa-sun"></i>
                 <span>Pastikan GPS dan kamera aktif</span>
             </div>
+        </div>
+
+        <!-- Status Koneksi -->
+        <div id="connectionStatus" class="hidden mb-4 p-4 rounded-xl text-center">
+            <i class="fas fa-wifi text-2xl mb-2"></i>
+            <p id="connectionMessage" class="font-medium"></p>
+            <button onclick="retryLoadData()" id="retryButton" class="retry-button hidden">
+                <i class="fas fa-sync-alt mr-2"></i>Coba Lagi
+            </button>
         </div>
         
         <!-- Status Card (ditampilkan setelah scan) -->
@@ -738,6 +765,8 @@
         let countdownSeconds = 3;
         let studentCache = new Map();
         let isDataLoaded = false;
+        let loadRetryCount = 0;
+        const MAX_RETRY = 3;
         
         // Cache untuk data
         const dataCache = {
@@ -746,45 +775,86 @@
             locations: null
         };
 
+        // Backup data di localStorage
+        const STORAGE_KEYS = {
+            STUDENTS: 'scan_qr_students_backup',
+            ATTENDANCE: 'scan_qr_attendance_backup',
+            LOCATIONS: 'scan_qr_locations_backup'
+        };
+
         // ==================== FUNGSI DEBUG ====================
         function debugLog(message, data = null) {
-            console.log(`🔍 [DEBUG] ${message}`, data || '');
+            const timestamp = new Date().toLocaleTimeString();
+            console.log(`🔍 [${timestamp}] ${message}`, data || '');
         }
 
         // ==================== FUNGSI JSONP UNTUK APPS SCRIPT ====================
         async function fetchSheetData(sheetName) {
-            debugLog(`Mengambil data ${sheetName}...`);
+            debugLog(`Mengambil data ${sheetName}... (percobaan ke-${loadRetryCount + 1})`);
             
+            // Cek cache dulu
+            if (dataCache[sheetName.toLowerCase()]) {
+                debugLog(`Menggunakan cache untuk ${sheetName}`);
+                return dataCache[sheetName.toLowerCase()];
+            }
+
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
+                // Set timeout untuk callback
+                const timeout = setTimeout(() => {
+                    debugLog(`⏱️ Timeout fetch ${sheetName}`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    
+                    // Coba ambil dari localStorage
+                    const cached = localStorage.getItem(STORAGE_KEYS[sheetName]);
+                    if (cached) {
+                        debugLog(`Menggunakan data backup dari localStorage untuk ${sheetName}`);
+                        const data = JSON.parse(cached);
+                        resolve(data);
+                    } else {
+                        resolve([]);
+                    }
+                }, 15000); // Naikkan timeout jadi 15 detik
+
                 window[callbackName] = function(response) {
+                    clearTimeout(timeout);
                     debugLog(`Response ${sheetName} diterima:`, response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
                     
                     delete window[callbackName];
-                    clearTimeout(timeout);
                     
                     if (response && response.success) {
                         const data = response.data || [];
+                        // Simpan ke cache
+                        dataCache[sheetName.toLowerCase()] = data;
+                        // Simpan ke localStorage sebagai backup
+                        try {
+                            localStorage.setItem(STORAGE_KEYS[sheetName], JSON.stringify(data));
+                            debugLog(`Data ${sheetName} disimpan ke localStorage`);
+                        } catch (e) {
+                            console.warn('Gagal simpan ke localStorage:', e);
+                        }
                         resolve(data);
                     } else {
                         console.error(`❌ Error dari Apps Script untuk ${sheetName}:`, response?.error);
-                        resolve([]);
+                        // Coba ambil dari localStorage
+                        const cached = localStorage.getItem(STORAGE_KEYS[sheetName]);
+                        if (cached) {
+                            debugLog(`Menggunakan data backup dari localStorage untuk ${sheetName}`);
+                            const data = JSON.parse(cached);
+                            resolve(data);
+                        } else {
+                            resolve([]);
+                        }
                     }
                 };
-
-                const timeout = setTimeout(() => {
-                    console.log(`⏱️ Timeout fetch ${sheetName}`);
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                    }
-                    const script = document.getElementById(callbackName);
-                    if (script) script.remove();
-                    resolve([]);
-                }, 10000);
 
                 const actionMap = {
                     'STUDENTS': 'getStudents',
@@ -801,18 +871,28 @@
                     return;
                 }
 
+                // Gunakan fetch dengan mode no-cors untuk menghindari CORS
                 const script = document.createElement('script');
                 script.id = callbackName;
                 script.src = `${APPS_SCRIPT_URL}?action=${action}&callback=${callbackName}&_=${Date.now()}`;
                 
                 script.onerror = () => {
-                    console.error(`❌ Script error fetch ${sheetName}`);
+                    debugLog(`❌ Script error fetch ${sheetName}`);
                     clearTimeout(timeout);
                     if (window[callbackName]) {
                         delete window[callbackName];
                     }
                     script.remove();
-                    resolve([]);
+                    
+                    // Coba ambil dari localStorage
+                    const cached = localStorage.getItem(STORAGE_KEYS[sheetName]);
+                    if (cached) {
+                        debugLog(`Menggunakan data backup dari localStorage untuk ${sheetName}`);
+                        const data = JSON.parse(cached);
+                        resolve(data);
+                    } else {
+                        resolve([]);
+                    }
                 };
 
                 document.body.appendChild(script);
@@ -827,14 +907,24 @@
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
+                const timeout = setTimeout(() => {
+                    debugLog(`⏱️ Timeout POST ${sheetName}`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve(false);
+                }, 20000);
+
                 window[callbackName] = function(response) {
+                    clearTimeout(timeout);
                     debugLog(`Response POST untuk ${sheetName}:`, response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
                     
                     delete window[callbackName];
-                    clearTimeout(timeout);
                     
                     if (response && response.success) {
                         resolve(true);
@@ -843,16 +933,6 @@
                         resolve(false);
                     }
                 };
-
-                const timeout = setTimeout(() => {
-                    console.log(`⏱️ Timeout POST ${sheetName}`);
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                    }
-                    const script = document.getElementById(callbackName);
-                    if (script) script.remove();
-                    resolve(false);
-                }, 15000);
 
                 const actionMap = {
                     'ATTENDANCE': 'saveAttendance',
@@ -875,7 +955,7 @@
                 script.src = `${APPS_SCRIPT_URL}?action=${action}&data=${encodedData}&callback=${callbackName}&_=${Date.now()}`;
                 
                 script.onerror = () => {
-                    console.error(`❌ Script error POST ${sheetName}`);
+                    debugLog(`❌ Script error POST ${sheetName}`);
                     clearTimeout(timeout);
                     if (window[callbackName]) {
                         delete window[callbackName];
@@ -894,14 +974,24 @@
             return new Promise((resolve) => {
                 const callbackName = `jsonp_${Date.now()}_${Math.random().toString(36).substr(2, 8)}`;
                 
+                const timeout = setTimeout(() => {
+                    debugLog(`⏱️ Timeout fetch config`);
+                    if (window[callbackName]) {
+                        delete window[callbackName];
+                    }
+                    const script = document.getElementById(callbackName);
+                    if (script) script.remove();
+                    resolve({});
+                }, 10000);
+
                 window[callbackName] = function(response) {
+                    clearTimeout(timeout);
                     debugLog('Response config:', response);
                     
                     const script = document.getElementById(callbackName);
                     if (script) script.remove();
                     
                     delete window[callbackName];
-                    clearTimeout(timeout);
                     
                     if (response && response.success) {
                         resolve(response.data || {});
@@ -911,22 +1001,12 @@
                     }
                 };
 
-                const timeout = setTimeout(() => {
-                    console.log(`⏱️ Timeout fetch config`);
-                    if (window[callbackName]) {
-                        delete window[callbackName];
-                    }
-                    const script = document.getElementById(callbackName);
-                    if (script) script.remove();
-                    resolve({});
-                }, 10000);
-
                 const script = document.createElement('script');
                 script.id = callbackName;
                 script.src = `${APPS_SCRIPT_URL}?action=getConfig&callback=${callbackName}&_=${Date.now()}`;
                 
                 script.onerror = () => {
-                    console.error(`❌ Script error fetch config`);
+                    debugLog(`❌ Script error fetch config`);
                     clearTimeout(timeout);
                     if (window[callbackName]) {
                         delete window[callbackName];
@@ -1103,9 +1183,12 @@
                 // Tampilkan 5 siswa pertama untuk debug
                 if (students.length > 0) {
                     debugLog('5 siswa pertama:', students.slice(0, 5));
+                } else {
+                    console.warn('⚠️ Data siswa kosong!');
+                    showConnectionStatus('error', 'Data siswa kosong. Periksa sheet STUDENTS.');
                 }
                 
-                // Update cache
+                // Update cache dengan berbagai format
                 studentCache.clear();
                 students.forEach(student => {
                     const nis = String(student.nis).trim();
@@ -1122,11 +1205,14 @@
                 
                 debugLog(`Student cache size: ${studentCache.size}`);
                 isDataLoaded = true;
+                loadRetryCount = 0;
+                
+                // Sembunyikan status koneksi jika sukses
+                hideConnectionStatus();
                 
                 return students;
             } catch (error) {
                 console.error('❌ Gagal load siswa:', error);
-                showToast('Gagal memuat data siswa', 'error');
                 return [];
             }
         }
@@ -1446,6 +1532,44 @@
             }).join('');
         }
 
+        // ==================== FUNGSI STATUS KONEKSI ====================
+        function showConnectionStatus(type, message) {
+            const statusDiv = document.getElementById('connectionStatus');
+            const messageEl = document.getElementById('connectionMessage');
+            const retryBtn = document.getElementById('retryButton');
+            
+            statusDiv.classList.remove('hidden');
+            messageEl.textContent = message;
+            
+            if (type === 'error') {
+                statusDiv.classList.add('bg-red-50', 'text-red-700', 'border', 'border-red-200');
+                statusDiv.classList.remove('bg-green-50', 'text-green-700');
+                retryBtn.classList.remove('hidden');
+            } else {
+                statusDiv.classList.add('bg-green-50', 'text-green-700', 'border', 'border-green-200');
+                statusDiv.classList.remove('bg-red-50', 'text-red-700');
+                retryBtn.classList.add('hidden');
+            }
+        }
+
+        function hideConnectionStatus() {
+            document.getElementById('connectionStatus').classList.add('hidden');
+        }
+
+        async function retryLoadData() {
+            showToast('Mencoba memuat ulang data...', 'info');
+            loadRetryCount++;
+            
+            if (loadRetryCount > MAX_RETRY) {
+                showConnectionStatus('error', 'Gagal memuat data setelah beberapa kali percobaan. Periksa koneksi internet Anda.');
+                return;
+            }
+            
+            await fetchStudents();
+            await fetchAttendance();
+            await fetchLocations();
+        }
+
         // ==================== FUNGSI SCANNER ====================
         async function onScanSuccess(decodedText) {
             if (isLoading) {
@@ -1479,6 +1603,9 @@
                         nisFromQR
                     );
                     showToast('Data siswa belum dimuat', 'error');
+                    
+                    // Tampilkan tombol retry
+                    showConnectionStatus('error', 'Gagal memuat data siswa. Klik tombol di bawah untuk mencoba lagi.');
                     
                     scheduleScannerResume();
                     isLoading = false;
@@ -1836,6 +1963,10 @@
                 document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
                 await fetchStudents();
                 
+                if (students.length === 0) {
+                    showConnectionStatus('error', 'Gagal memuat data siswa. Periksa koneksi internet Anda.');
+                }
+                
                 document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
                 await fetchAttendance();
                 
@@ -1870,6 +2001,18 @@
             document.getElementById('openingStatus').textContent = 'Memuat data siswa...';
             await fetchStudents();
             
+            if (students.length === 0) {
+                // Coba load dari localStorage jika online gagal
+                const cached = localStorage.getItem(STORAGE_KEYS.STUDENTS);
+                if (cached) {
+                    students = JSON.parse(cached);
+                    debugLog('Menggunakan data siswa dari cache:', students.length);
+                    isDataLoaded = true;
+                } else {
+                    showConnectionStatus('error', 'Gagal memuat data siswa. Periksa koneksi internet Anda.');
+                }
+            }
+            
             document.getElementById('openingStatus').textContent = 'Memuat data absensi...';
             await fetchAttendance();
             
@@ -1885,6 +2028,7 @@
         }
 
         window.onload = init;
+        window.retryLoadData = retryLoadData;
     </script>
 </body>
 </html>
